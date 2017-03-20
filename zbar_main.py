@@ -78,6 +78,7 @@ def get_distance(location):
     else:
         d = QR_length*(1-(dy_right/dy_left)/2
 
+# ??WHAT IS?
 
 # Returns the orientation to cube in degrees
 # def get_orientation(bajs):
