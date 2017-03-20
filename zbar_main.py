@@ -88,6 +88,7 @@ def get_distance(location):
 # from area to distance
 # do measurements from camera at measured distances min/max dist?
 # from location to current orientation regarding to the front
+# TEST PHRASE
 
 proc.set_data_handler(data_handler)
 
