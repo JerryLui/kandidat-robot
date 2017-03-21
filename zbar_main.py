@@ -7,7 +7,6 @@ import sys, math, zbar
 proc = zbar.Processor()
 
 # Processor config
-# TODO: enable QR symbology only
 proc.parse_config('enable')
 
 # Camera config
@@ -69,23 +68,18 @@ def get_bottom_angle_deviation(location):
     return math.atan(dx/dy)
 
 # Returns the distance to the QR-code __UNFINISHED__CODE__
-def get_distance(location):
-    center_point = get_square_center(location)
-    dy_right = location[3][1]-location[2][1]
-    dy_left = location[0][1]-location[1][1]
-    if (dy_right/dy_left) > 1:
-        d = QR_length*((dy_right/dy_left)-1)/2    # If dy1/dy2 -> Right Side, else left side
-    else:
-        d = QR_length*(1-(dy_right/dy_left)/2
-
-# ??WHAT IS?
+#def get_distance(location):
+#    center_point = get_square_center(location)
+#    dy_right = location[3][1]-location[2][1]
+#    dy_left = location[0][1]-location[1][1]
+#    if (dy_right/dy_left) > 1:
+#        d = QR_length*((dy_right/dy_left)-1)/2    # If dy1/dy2 -> Right Side, else left side
+#    else:
+#        d = QR_length*(1-(dy_right/dy_left)/2
 
 # Returns the orientation to cube in degrees
 # def get_orientation(bajs):
-    
-    
 
-# TODO:
 # from area to distance
 # do measurements from camera at measured distances min/max dist?
 # from location to current orientation regarding to the front
