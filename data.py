@@ -13,7 +13,7 @@ if not bno.begin():
 
 # File Write Configuration
 file = open(time.strftime('accel_measurement_%d-%h.txt', time.localtime()), 'w')
-header = 'x\ty\z\tcsys\tcaccel\n'
+header = 'x\ty\tz\tcsys\tcaccel\n'
 file.write(header)
 
 counter = 1
