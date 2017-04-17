@@ -1,6 +1,6 @@
 # __UNTESTED__CODE__: Code haven't been tested physically yet
 # __UNTESTED__LOGIC__: Logic of code haven't been tested
-#!/usr/bin/pytihon
+#!/usr/bin/python
 import sys, math, zbar
 
 # Create processor

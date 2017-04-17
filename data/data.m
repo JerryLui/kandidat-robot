@@ -55,8 +55,8 @@ y1 = [371, 467, 461, 372, 371];
 x2 = [550, 554, 636, 631, 550];
 y2 = [0, 77, 76, 0, 0];
 
-x3 = [1, 21, 122, 109];%, 1];
-y3 = [37, 134, 133, 37];%, 37];
+x3 = [1, 21, 122, 109, 1];
+y3 = [37, 134, 133, 37, 37];
 
 x4 = [28, 30, 153, 156, 28];
 y4 = [333, 448, 437, 328, 333];
@@ -81,6 +81,8 @@ text(x3+1, y3, num2str((1:numel(y3))'))
 text(x4+1, y4, num2str((1:numel(y4))'))
 title('View in the cameras perspective')
 legend('left-down', 'left-up', 'right-up', 'right-down')
+xlabel('Pixels')
+ylabel('Pixels')
 hold off
 
 %%
