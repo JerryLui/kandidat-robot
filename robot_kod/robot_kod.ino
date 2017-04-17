@@ -8,8 +8,8 @@ Servo myservo;
 #define sensorLimit 800
 #define sense 17           //10 work with nrofr 20
 #define minAngle 0
-#define maxAngle 180 
-#define accuracy 180
+#define maxAngle 540 
+#define accuracy 540
 
 //Moving var
 #define dir1 4
@@ -41,7 +41,7 @@ void setup() {
   digitalWrite(enable2,LOW);digitalWrite(dir2,LOW);
 
   pinMode(A0, INPUT_PULLUP);    // Set 'A0' as input from the sensor
-  myservo.attach(11); 
+  myservo.attach(13); 
 
   aDelay = micros();
 }
@@ -84,13 +84,13 @@ int scan() {
 
 	// Initial Sweep
   for (int i = minAngle; i < maxAngle; i++) {  //Cc sweep
-    stepServo(i);
+    stepServo(i/(accuracy/180));
     readings[i] = readSensor();
     //Serial.println(readings[i]);
   }
 
   for (int i = maxAngle; i > minAngle; i--) {  //C sweep
-    stepServo(i);
+    stepServo(i/(accuracy/180));
     readings2[i] = readSensor();
     //Serial.println(readings[i]);
   }
@@ -116,7 +116,7 @@ int scan() {
 	if (maxSpan+maxSpan2 < 10) {
     return -1;
   } else {
-  return(((startSpan +(maxSpan/2))/2)+((startSpan2 +(maxSpan2/2))/2))
+  return(((startSpan +(maxSpan/2))/2)+((startSpan2 +(maxSpan2/2))/2))/(accuracy/180);
   }
 }
 
