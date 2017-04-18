@@ -7,13 +7,13 @@
 Servo myservo;
 SoftwareSerial mySerial(8,10);
 SoftwareSerial myFake(9,10);
-# define nrOfReadings 3                //20 works fine
-# define sensorLimit 80                //limit for what should be considered a high and low value for the IR-sensor
-# define sense 2                       //10 work with nrofr 20
-# define resulotion 3
-# define minAngle 0                     //The angle at which the servo strats its search sweep
-# define maxAngle 180*resulotion        //The angle at which the servo stops, 
-# define accuracy 180*resulotion
+#define nrOfReadings 3           //20 works fine
+#define sensorLimit 80               //limit for what should be considered a high and low value for the IR-sensor
+#define sense 2                      //10 work with nrofr 20
+#define resulotion 2
+#define minAngle 0                    //The angle at which the servo strats its search sweep
+#define maxAngle 180*resulotion       //The angle at which the servo stops,
+#define accuracy 180*resulotion
 
 //Moving var
 #define dir1 4
@@ -33,7 +33,7 @@ unsigned int delayT;
 unsigned int Adelay;
 
 void setup() {
-	Serial.begin(57600);      // open the serial port at 9600 bps:   
+	Serial.begin(57600);      // open the serial port at 9600 bps:
 	mySerial.begin(2400);
 	myFake.begin(2400);
 
@@ -64,9 +64,9 @@ void loop() {
 /*~~~~~~~~~~ Move Functions ~~~~~~~~~~~*/
 //This function uses varibales defined in the begin to perform searchsweep with the servo, it returns a int representing the middle of a brigthspot
 //in other words the returned int represents the angle to the "Lighthouse" in relation to the robot
-int scan() {                                        
-	bool readings [accuracy];       //To avoid false readings the sweep is done both ways 
-	int maxSpan = 0;                //first counterclockwise and then clockwise               
+int scan() {
+	bool readings [accuracy];       //To avoid false readings the sweep is done both ways
+	int maxSpan = 0;                //first counterclockwise and then clockwise
 	int startSpan = 0;
 	bool readings2 [accuracy];
 	int maxSpan2 = 0;
@@ -75,11 +75,11 @@ int scan() {
 
 	for (int i = 0; i<accuracy; i++) { //This loop makes sure there are no lingering values in the arrays
 		readings[i] = false;
-		readings2[i] = false; 
+		readings2[i] = false;
 	}
 
 	for ( int i = minAngle; i < maxAngle; i++ ) {  //Counterclockwise searchsweep
-		stepServo(i);                               //Moves the servo to the next position            
+		stepServo(i);                               //Moves the servo to the next position
 		readings[i] = readSensor();                 //saves the current value in its position in the array
 	}
 	for ( int i = maxAngle; i > minAngle; i-- ) {  //Clockwise sweep
@@ -87,8 +87,8 @@ int scan() {
 		readings2[i] = readSensor();
 	}
 
-	for ( int i = minAngle; i < maxAngle; i++ ) {  //Search for span of "true" values  
-		if (readings[i] && readings[i+1]) {           //Counterclockwise, if two adjacent readings are both "true" then 
+	for ( int i = minAngle; i < maxAngle; i++ ) {  //Search for span of "true" values
+		if (readings[i] && readings[i+1]) {           //Counterclockwise, if two adjacent readings are both "true" then
 			for ( j = i; readings[j]; j++) {}         //this loop starts counting and only stops when it reaches a "false" value in the array
 			if (maxSpan < j-i) {                        //if the longest span of "true" values are shorter then the spann just scanned the values are updated
 				maxSpan = j-i;                          //the length of the span
@@ -103,7 +103,8 @@ int scan() {
 				startSpan2 = i;
 			}
 		}
-		//if (startSpan == i) i = i + maxSpan;         //If a new span of "true" values has been found this line makes the search resume at the end of the span
+		//if (startSpan == i) i = i + maxSpan;
+		//If a new span of "true" values has been found this line makes the search resume at the end of the span
 	}
 	//Serial.println((((startSpan +(maxSpan/2))/2)+((startSpan2 +(maxSpan2/2))/2))/(540/180));
 	if (maxSpan+maxSpan2 < 3) {
@@ -128,12 +129,11 @@ bool readSensor(){
 			signal = true;
 		}
 	myFake.listen();
-	}	
+	}
 	return signal;
 }
 
 /*~~~~~~~~~~ Move Function ~~~~~~~~~~*/
-
 void walk(int dir, int steps) {
 	gears(dir);
 	for (int i = 0; i<steps; i++) {
@@ -143,7 +143,7 @@ void walk(int dir, int steps) {
 	delay(50);
 }
 
-// Flyttar båda motorerna 1 steg framåt, riktning bestämms av funktionen gears
+// Tells motors to turn one step, direction given by the function gears
 void step(double delayT) {
 	delayMicroseconds(delayT-(micros()-Adelay));
 	digitalWrite(steg1,HIGH);digitalWrite(steg2,HIGH);
@@ -175,17 +175,14 @@ void gears(int dir) {
 	}
 }
 void left() {
-	//Serial.println("left");
 	digitalWrite(dir1,LOW);
 	digitalWrite(dir2,LOW);
 }
 void straight() {
-	//Serial.println("straight");
 	digitalWrite(dir1,HIGH);
 	digitalWrite(dir2,LOW);
 }
 void right() {
-	//Serial.println("right");
 	digitalWrite(dir1,HIGH);
 	digitalWrite(dir2,HIGH);
 }
