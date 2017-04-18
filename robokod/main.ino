@@ -2,16 +2,16 @@
 #include <Timer.h>
 #include <Servo.h>
 
-//searching var
+// Searching Variables
 Servo myservo;
-#define nrOfReadings 30    //20 works fine
-#define sensorLimit 800
-#define sense 17           //10 work with nrofr 20
-#define minAngle 0
-#define maxAngle 540 
-#define accuracy 540
+#define nrOfReadings 30   		// Amount of times the code is read at same position
+#define sensorThreshold 800		// Threshold value for input signal
+#define sense 17          		// 10 work with nrofr 20
+#define minAngle 0						// Minimum angle for servo
+#define maxAngle 360					// Maximum angle for servo
+#define accuracy 360					// ??
 
-//Moving var
+// Moving Variables for Step Motors
 #define dir1 4
 #define steg1 3
 #define enable1 5
@@ -27,12 +27,12 @@ Servo myservo;
 
 
 unsigned int delayT;
-unsigned int aDelay;
+unsigned int Adelay;
 int FW = 1000;
 int TR = 200;//768/4; //768 är typ ett helt varv
 
 void setup() {
-  Serial.begin(9600);      // open the serial port at 9600 bps:   
+  Serial.begin(9600);      			// open the serial port at 9600 bps:   
 
   pinMode(enable1,OUTPUT);pinMode(steg1,OUTPUT);pinMode(dir1,OUTPUT);
   pinMode(enable2,OUTPUT);pinMode(steg2,OUTPUT);pinMode(dir2,OUTPUT);
@@ -43,36 +43,28 @@ void setup() {
   pinMode(A0, INPUT_PULLUP);    // Set 'A0' as input from the sensor
   myservo.attach(13); 
 
-  aDelay = micros();
+  Adelay = micros();
 }
 
-// Main loop
 void loop() {
   int x = scan();
-/*  Serial.print("Vinkel: ");*/
-  /*Serial.println(x);*/
-  if (x >= 100) { 
+  Serial.println(x);
+  if (x > 99) { 
 		walk(1,abs(x-85));
 	}
-  else if (x < 80 && x>0) { 
+  else if (x<80 && x>0) { 
 		walk(3,abs(95-x));
 	}
-  else if (x<0) {
-	}
-  else { // Walks straight
+  else if (x != -1) {
 		stepServo(x);
-		while (readSensor()) {
+		delay(1000);
+		while (readSensor()) { // && ultraljud.read not too far
 			walk(2, 200);
 		}
 	}
-  /* 
-  walk(2, FW);
-  walk(1, TR);
-  */
-  
-  //stepServo(90);
 }
-/////////////////////////////////////////// Search functions
+
+/*~~~~~~~~~ Search Functions ~~~~~*/
 int scan() {
   bool readings [accuracy];
   bool readings2 [accuracy];
@@ -81,20 +73,23 @@ int scan() {
   int maxSpan2 = 0;
   int startSpan2 = 0;
   int j;
-
-	// Initial Sweep
+/*
+  for (int i = 0; i<accuracy; i++) {
+    readings[i] = false;
+    readings2[i] = false; 
+  }
+  */
   for (int i = minAngle; i < maxAngle; i++) {  //Cc sweep
     stepServo(i/(accuracy/180));
     readings[i] = readSensor();
-    //Serial.println(readings[i]);
+    Serial.println(readings[i]);
   }
-
   for (int i = maxAngle; i > minAngle; i--) {  //C sweep
     stepServo(i/(accuracy/180));
     readings2[i] = readSensor();
-    //Serial.println(readings[i]);
+    Serial.println(readings[i]);
   }
- 
+  
   for (int i = minAngle; i < maxAngle; i++) { //Search for span 
     if (readings[i] && readings[i+1]) {           //Cc
       for (j = i; readings[j]; j++) {}
@@ -112,45 +107,44 @@ int scan() {
       }
     }
   }
-  
-	if (maxSpan+maxSpan2 < 10) {
+  if (maxSpan+maxSpan2 < 10) {
     return -1;
-  } else {
+  }else{
   return(((startSpan +(maxSpan/2))/2)+((startSpan2 +(maxSpan2/2))/2))/(accuracy/180);
   }
 }
 
-// Turns the servo by given input: stepAngle
 void stepServo(double stepAngle) {
   myservo.write(stepAngle);
+  //delay(1);
 }
 
-// Reads sensor from analogRead times nrOfReadings
-// If reading returns above threshold value (sense) return true, else false
 bool readSensor() {
   double sensorData = 0;
   int reading = 0;
-	
-  // Reads sesonr nrOfReadings times and sets a reading value
+  
   for (int i = 0; i < nrOfReadings; i++) {
     sensorData = analogRead(A0);
-      if (sensorData < sensorLimit) {
-        reading = reading + 3;
-      } else {
+    //Serial.println(sensorData);
+      if (sensorData < sensorThreshold) {
+        reading=reading + 3;
+      }else{
         reading--;
+        //reading = reading - 2;
       }
   } // end for
   if (reading > sense) {
+    //Serial.println("true");
     return true;
-  } else {
+  }else{
+    //Serial.println("false");
     return false;
   }
 }
 
-/*~~~~~~~~~~~~ Move functions ~~~~~~~~~~~~*/
-// Walks towoards the direction by nmbr of steps 
-void walk(int dir, int steps) {
-  direction(dir);
+/*~~~~~ Motor Functions ~~~~~~*/
+void walk(int gear, int steps) {
+  gears(gear);
   for (int i = 0; i<steps; i++) {
     delayT = soft(i,steps,delayT);
     step(delayT);
@@ -158,26 +152,28 @@ void walk(int dir, int steps) {
   delay(50);
 }
 
-// Flyttar båda motorerna 1 steg framåt, riktning bestämms av funktionen direction
-void step(double delayT) { delayMicroseconds(delayT-(micros()-aDelay));
-  digitalWrite(steg1,HIGH);
-	digitalWrite(steg2,HIGH);
-  aDelay = micros();
+//Flyttar båda motorerna 1 steg framåt, riktning bestämms av funktionen gears
+void step(double delayT) { 
+  delayMicroseconds(delayT-(micros()-Adelay));
+  digitalWrite(steg1,HIGH);digitalWrite(steg2,HIGH);
+  Adelay = micros();
 
-  delayMicroseconds(delayT-(micros()-aDelay));
-  digitalWrite(steg1,LOW);
-	digitalWrite(steg2,LOW);
-  aDelay = micros();
+  delayMicroseconds(delayT-(micros()-Adelay));
+  digitalWrite(steg1,LOW);digitalWrite(steg2,LOW);
+  Adelay = micros();
 }
 
-double soft(int steps, int limit, double current) {
-  if (steps == 0) current = startDelay;
-  if (steps <=((startDelay-speedDelay)/inc) && current > speedDelay) current = current - inc;
-  if (steps>(limit-brake)) current = current + inc;
+double soft(int step, int limit, double current) {
+  if (step == 0) 
+		current = startDelay;
+  if (step <=((startDelay-speedDelay)/inc) && current > speedDelay)
+		current = current - inc;
+  if (step>(limit-brake)) // ELIF?
+		current = current + inc;
   return current;
 }
 
-void direction(int dir) {
+void gears(int dir) {
   switch(dir) {
     case 1:
       left();
