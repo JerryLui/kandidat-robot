@@ -43,7 +43,7 @@ void setup() {
 	digitalWrite(enable1,LOW);digitalWrite(dir1,HIGH);
 	digitalWrite(enable2,LOW);digitalWrite(dir2,LOW);
 
-	pinMode(A0, INPUT_PULLUP);    // Set 'A0' as input from the sensor
+	pinMode(A5, INPUT_PULLUP);    // Set 'A0' as input from the sensor
 	myservo.attach(13);           //defines that pin 11 is connected to the controll pin of a "servo"
 
 	Adelay = micros();            //To get the delay between each step to be approximally equal the time it takes to run the code must be accounted for
