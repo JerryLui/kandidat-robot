@@ -52,13 +52,13 @@ void setup() {
 void loop() {
 	int x = scan();
 	if ( x > 95) {
-		walk(LEFT,abs(x-90)*2);
+		walk(1,abs(x-90)*2);
 	}
 	else if (x < 85 && x>0) {
-		walk(STRAIGHT,abs(90-x)*2);
+		walk(2,abs(90-x)*2);
 	}
 	else {
-		walk(RIGHT,(10-abs(x-90))*80);
+		walk(3,(10-abs(x-90))*80);
 	}
 }
 /*~~~~~~~~~~ Move Functions ~~~~~~~~~~~*/
@@ -133,11 +133,8 @@ bool readSensor(){
 }
 
 /*~~~~~~~~~~ Move Function ~~~~~~~~~~*/
-enum direction {
-	LEFT, RIGHT, STRAIGHT
-}
 
-void walk(enum dir, int steps) {
+void walk(int dir, int steps) {
 	gears(dir);
 	for (int i = 0; i<steps; i++) {
 		delayT = soft(i,steps,delayT);
@@ -164,15 +161,15 @@ double soft(int steps, int limit, double current) {
 	return current;
 }
 
-void gears(enum dir) {
+void gears(int dir) {
 	switch(dir) {
-		case LEFT:
+		case 1:
 			left();
 			break;
-		case STRAIGHT:
+		case 2:
 			straight();
 			break;
-		case RIGHT:
+		case 3:
 			right();
 			break;
 	}
