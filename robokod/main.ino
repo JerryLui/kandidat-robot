@@ -25,6 +25,11 @@ Servo myservo;
 #define inc 7
 #define brake 130
 
+// Ultrasound sensor
+#define trigPin 2
+#define echoPin 3
+#define maxDistance 100
+#define minDistance 10
 
 unsigned int delayT;
 unsigned int Adelay;
@@ -48,7 +53,7 @@ void setup() {
 
 void loop() {
   int x = scan();
-  Serial.println(x);
+
   if (x > 99) { 
 		walk(1,abs(x-85));
 	}
@@ -59,7 +64,7 @@ void loop() {
 		stepServo(x);
 		delay(1000);
 		while (readSensor()) { // && ultraljud.read not too far
-			walk(2, 200);
+			walk(2, 200); 			// smaller steps and smoother walk
 		}
 	}
 }
@@ -140,6 +145,30 @@ bool readSensor() {
     //Serial.println("false");
     return false;
   }
+}
+
+// Copy paste from ultrasonic example code
+int readUltrasonic() {
+	int cm;
+
+	pinMode(trigPin, OUTPUT);
+	digitalWrite(trigPin, LOW);
+	delayMicroseconds(2);
+	digitalWrite(trigPin, HIGH);
+	delayMicroseconds(10);
+	digitalWrite(trigPin, LOW);
+	pinMode(echoPin, INPUT);
+	cm = msToCm(pulseIn(echoPin, HIGH);
+
+	if (cm < maxDistance && cm > minDistance)
+		return cm;
+	else
+		return -1;
+}
+
+// Conver miliseconds to centimeters for ultrasound
+int msToCm(int ms) {
+	return ms/29/2;
 }
 
 /*~~~~~ Motor Functions ~~~~~~*/
