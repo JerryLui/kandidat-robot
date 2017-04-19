@@ -1,6 +1,3 @@
-#include <Event.h>
-#include <Timer.h>
-
 // Direction Variables
 #define lDirection 4
 #define lStep 3
