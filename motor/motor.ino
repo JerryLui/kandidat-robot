@@ -45,7 +45,7 @@ void loop() {
 // Configures motor for the given direction dir walks for given steps
 void walk(Direction dir, int steps) {
 	direction(dir);
-	deaccelerate(accelerationLength, accelerate(steps));
+	deaccelerate(accelerationLength, accelerate(steps-accelerationLength));
 }
 
 // Runs motor for given amount of steps
