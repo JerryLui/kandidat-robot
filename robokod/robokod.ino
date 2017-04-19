@@ -128,7 +128,7 @@ bool readSensor(){
 		if(mySerial.available()){
 			signal = true;
 		}
-	myFake.listen();
+		myFake.listen();
 	}
 	return signal;
 }
@@ -155,9 +155,15 @@ void step(double delayT) {
 }
 
 double soft(int steps, int limit, double current) {
-	if (steps == 0) current = startDelay;
-	if (steps <=((startDelay-speedDelay)/inc) && current > speedDelay) current = current - inc;
-	if (steps>(limit-brake)) current = current + inc;
+	if (steps == 0) {
+		current = startDelay;
+	}
+	else if (steps <=((startDelay-speedDelay)/inc) && current > speedDelay) {
+		current = current - inc;
+	}
+	else if (steps>(limit-brake)) {
+		current = current + inc;
+	}
 	return current;
 }
 
