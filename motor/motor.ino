@@ -125,7 +125,7 @@ int decrementDelay(int delayTime) {
 	}
 }
 
-// Turns around 180 degrees 
+// Turns around 180 degrees anti clockwise 
 void turnAround() {
 	turnAround(LEFT);
 }
