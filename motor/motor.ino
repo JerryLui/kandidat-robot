@@ -11,7 +11,7 @@
 #define rOutput 2
 
 // Motor Constants
-const int stepsPerTurn = 392;							// Nmbr of steps per turn __NOT PRECISE__
+const int stepsPerTurn = 391;							// Nmbr of steps per turn __NOT PRECISE__
 
 // Motor Variables
 const int motorDelayUpperBound = 6000;		// Delaytime for motor
@@ -47,7 +47,7 @@ void loop() {
 		testVar++;
 	} else if (testVar == 2) {
 		turnAround();
-		testVar--;
+		testVar++;
 	}
 }
 
@@ -71,6 +71,13 @@ void walk(Direction dir, int length) {
 		runMotor(steps-2*accelerationLength);
 		deaccelerate(accelerationLength);
 	}
+}
+
+// Turns towoards direction by given angle
+void turn(Direction dir, int angle) {
+	direction(dir);
+	globalDelay = motorDelayLowerBound;
+	runMotor(angle/180*stepsPerTurn);
 }
 
 // Runs motor for given amount of steps
@@ -120,9 +127,11 @@ int decrementDelay(int delayTime) {
 
 // Turns around 180 degrees 
 void turnAround() {
-	direction(LEFT);
-	globalDelay = motorDelayLowerBound;
-	runMotor(stepsPerTurn);
+	turnAround(LEFT);
+}
+
+void turnAround(Direction dir) {
+	turn(dir, 180);
 }
 
 // Moves one step by sending out a square wave with the input motorDelay
