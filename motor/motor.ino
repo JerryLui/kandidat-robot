@@ -1,4 +1,3 @@
-#include <Servo.h>
 #include <Event.h>
 #include <Timer.h>
 
@@ -11,16 +10,26 @@
 #define rStep 6
 #define rOutput 2
 
-#define motorDelayUpperBound 6000		// Delaytime for motor
-#define motorDelayLowerBound 2000
-#define delayIncrement 40
-#define accelerationLength 100			// The number of steps required for accelration/deacceleration
+// Motor Constants
+const int stepsPerTurn = 392;							// Nmbr of steps per turn __NOT PRECISE__
 
-unsigned int testVar;
+// Motor Variables
+const int motorDelayUpperBound = 6000;		// Delaytime for motor
+const int motorDelayLowerBound = 2000;
+const int delayIncrement = 40;
+const int accelerationLength = (motorDelayUpperBound-motorDelayLowerBound)/delayIncrement;
+
+// Global Constants
+const float pi = 3.1416;
+
+// Global Variables
+int globalDelay = motorDelayLowerBound;
+
+int testVar = 1;
 
 // Motor Directions
 enum Direction {
-	LEFT, RIGHT, STRAIGHT
+	LEFT, RIGHT, STRAIGHT, BACK
 };
 
 // Setup
@@ -32,46 +41,63 @@ void setup() {
 	testVar = 1;
 }
 
-// Main Loop
 void loop() {
 	if (testVar == 1) {
-		walk(STRAIGHT, 600);
-		testVar = 2;
+		walk(STRAIGHT, 6.8*pi);
+		testVar++;
+	} else if (testVar == 2) {
+		turnAround();
+		testVar--;
 	}
 }
 
-// Motor Functions
-
-// Configures motor for the given direction dir walks for given steps
-void walk(Direction dir, int steps) {
+/*~~~~~~~~~~ Motor Functions ~~~~~~~~~~~~*/
+/* 	The wheels have a radius of 3.4 cm, which results in a circumference
+		of 6.8*pi cm. To convert from length to steps we use the constant steps-
+		PerTurn. 																																*/
+// Walks towoards direction in given length in centimeters
+void walk(Direction dir, int length) {
 	direction(dir);
-	deaccelerate(accelerationLength, accelerate(steps-accelerationLength));
+	
+	// Converts length into steps for motor
+	int steps = length/(6.8*pi) * stepsPerTurn; // Temporary workaround
+
+	// Walks given steps
+	if ((steps-2*accelerationLength) < 0) {
+		accelerate(steps/2);
+		deaccelerate(steps/2);
+	} else {
+		accelerate(accelerationLength);
+		runMotor(steps-2*accelerationLength);
+		deaccelerate(accelerationLength);
+	}
 }
 
 // Runs motor for given amount of steps
-void runMotor(int steps, int currentDelay) {
+void runMotor(int steps) {
 	for (int i = 0; i < steps; i++) {
-		step(currentDelay);
+		step(globalDelay);
 	}
 }
 
 // Accelerates in given number of steps, returns the current motor delay
-int accelerate(int steps) {
+void accelerate(int steps) {
 	int currentDelay = motorDelayUpperBound;
 	for (int i = 0; i < steps; i++) {
 		step(currentDelay);
 		currentDelay = decrementDelay(currentDelay);
 	}
-	return currentDelay;
+	globalDelay = currentDelay;
 }
 
 // Deaccelerates in given number of steps, returns the current motor delay
-int deaccelerate(int steps, int currentDelay) {
+void deaccelerate(int steps) {
+	int currentDelay = globalDelay;
 	for (int i = 0; i < steps; i++) {
 		step(currentDelay);
 		currentDelay = incrementDelay(currentDelay);
 	}
-	return currentDelay;
+	globalDelay = currentDelay;
 }
 
 // Increments motor delay time by delayIncrement
@@ -90,6 +116,13 @@ int decrementDelay(int delayTime) {
 	} else {
 		return delayTime;
 	}
+}
+
+// Turns around 180 degrees 
+void turnAround() {
+	direction(LEFT);
+	globalDelay = motorDelayLowerBound;
+	runMotor(stepsPerTurn);
 }
 
 // Moves one step by sending out a square wave with the input motorDelay
@@ -114,6 +147,10 @@ void direction(Direction dir) {
 		case STRAIGHT:
 			digitalWrite(lDirection, HIGH);
 			digitalWrite(rDirection, LOW);
+			break;
+		case BACK:
+			digitalWrite(lDirection, LOW);
+			digitalWrite(rDirection, HIGH);
 			break;
 	}
 }
