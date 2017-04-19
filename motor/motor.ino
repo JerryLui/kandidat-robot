@@ -1,3 +1,4 @@
+#include <Servo.h>
 #include <Event.h>
 #include <Timer.h>
 
@@ -10,6 +11,9 @@
 #define rStep 6
 #define rOutput 2
 
+#define motorDelayLowerBound 6000		// Delaytime for motor
+#define motorDelayUpperBound 2000
+
 // Motor Directions
 enum Direction {
 	LEFT, RIGHT, STRAIGHT
@@ -18,36 +22,45 @@ enum Direction {
 // Setup
 void setup() {
 	pinMode(lOutput, OUTPUT);pinMode(lStep, OUTPUT);pinMode(lDirection, OUTPUT);
-	digitalWrite(lOutput, LOW);digitalWrite(lOutput, HIGH);
-
 	pinMode(rOutput, OUTPUT);pinMode(rStep, OUTPUT);pinMode(rDirection, OUTPUT);
-	digitalWrite(rOutput, LOW);digitalWrite(rOutput, HIGH);
+	digitalWrite(lOutput, LOW);digitalWrite(lDirection, LOW);
+	digitalWrite(rOutput, LOW);digitalWrite(rDirection, HIGH);
 }
 
 // Main Loop
 void loop() {
-	delayMicroseconds(10);
-	step();
+	step(motorDelayLowerBound);
 }
 
 // Motor Functions
-void step() {
+void walk(Direction dir, int steps) {
+	int currentDelay = motorDelayUpperBound;
+	direction(dir);
+	for (int i = 0; i < steps; i++) {
+	}
+}
+
+// Moves one step by sending out a square wave with the input motorDelay
+void step(int motorDelay) {
+	delayMicroseconds(motorDelay);
 	digitalWrite(lStep, HIGH);digitalWrite(rStep, HIGH);
+	delayMicroseconds(motorDelay);
 	digitalWrite(lStep, LOW);digitalWrite(rStep, LOW);
 }
 
-void directions(Direction dir) {
+// Changes the direction of motors
+void direction(Direction dir) {
 	switch(dir) {
 		case LEFT:
 			digitalWrite(lDirection, LOW);
 			digitalWrite(rDirection, LOW);
 			break;
 		case RIGHT:
-			digitalWrite(lDirection, LOW);
+			digitalWrite(lDirection, HIGH);
 			digitalWrite(rDirection, HIGH);
 			break;
 		case STRAIGHT:
-			digitalWrite(lDirection, HIGH);
+			digitalWrite(lDirection, LOW);
 			digitalWrite(rDirection, HIGH);
 			break;
 	}
