@@ -17,12 +17,10 @@ const int delayIncrement = 40;
 const int accelerationLength = (motorDelayUpperBound-motorDelayLowerBound)/delayIncrement;
 
 // Global Constants
-const float pi = 3.1416;
+const double pi = 3.1416;
 
 // Global Variables
-int globalDelay = motorDelayLowerBound;
-
-int testVar = 1;
+int globalMotorDelay = motorDelayLowerBound;
 
 // Motor Directions
 enum Direction {
@@ -35,16 +33,41 @@ void setup() {
 	pinMode(rOutput, OUTPUT);pinMode(rStep, OUTPUT);pinMode(rDirection, OUTPUT);
 	digitalWrite(lOutput, LOW);digitalWrite(lDirection, HIGH);
 	digitalWrite(rOutput, LOW);digitalWrite(rDirection, LOW);
-	testVar = 1;
 }
 
 void loop() {
-	if (testVar == 1) {
-		walk(STRAIGHT, 6.8*pi);
-		testVar++;
-	} else if (testVar == 2) {
-		turnAround();
-		testVar++;
+	// Robo Logic
+	// Scan for signal in 180 degrees in front of robot
+	int angle = scan();
+	int distance;
+
+	// Check if signal out of bounds
+	if (angle < 0 || angle > 180) {} 
+	else if (angle > 95) {
+		turn(LEFT, abs(90-angle));	// Rotate robot by given angular difference
+	} 
+	else if (angle < 85) {
+		turn(RIGHT, abs(90-angle)); // Rotate robot by given anlgular difference
+	} 
+	else {
+		// Turns IR-sensor towoards signal
+		servoTurn(angle);
+		// While there's a signal, go towoards it
+		while (readSensor()) {
+			// Retrieve distance from ultrasound sensor
+			distance = getDistance();
+			// If distance longer than 1m: walk towoards signal with small steps 
+			if (distance > 100) {
+				walk(STRAIGHT, 10);
+			}
+			// If distance longer than ultrasound lower bound walk all the way towoards it
+			else if (distance > 10) {
+				walk(STRAIGHT, 0.95*distance);
+			}
+			else if (distance < 10) {
+				// CLOSE RANGE CODE
+			}
+		}
 	}
 }
 
@@ -55,11 +78,10 @@ void loop() {
 // Walks towoards direction in given length in centimeters
 void walk(Direction dir, int length) {
 	direction(dir);
-	
-	// Converts length into steps for motor
-	int steps = length/(6.8*pi) * stepsPerTurn; // Temporary workaround
 
-	// Walks given steps
+	int steps = lengthToSteps(length);
+	// Walks given steps, if nmbr of steps is longer than 2*accelerationLenght
+	// skip constant run.
 	if ((steps-2*accelerationLength) < 0) {
 		accelerate(steps/2);
 		deaccelerate(steps/2);
@@ -70,17 +92,22 @@ void walk(Direction dir, int length) {
 	}
 }
 
+// Converts length into motor steps
+int lengthToSteps(int length) {
+	return length/(6.8*pi) * stepsPerTurn;
+}
+
 // Turns towoards direction by given angle
 void turn(Direction dir, int angle) {
 	direction(dir);
-	globalDelay = motorDelayLowerBound;
+	globalMotorDelay = motorDelayLowerBound;
 	runMotor(angle/180*stepsPerTurn);
 }
 
 // Runs motor for given amount of steps
 void runMotor(int steps) {
 	for (int i = 0; i < steps; i++) {
-		step(globalDelay);
+		step(globalMotorDelay);
 	}
 }
 
@@ -91,17 +118,17 @@ void accelerate(int steps) {
 		step(currentDelay);
 		currentDelay = decrementDelay(currentDelay);
 	}
-	globalDelay = currentDelay;
+	globalMotorDelay = currentDelay;
 }
 
 // Deaccelerates in given number of steps, returns the current motor delay
 void deaccelerate(int steps) {
-	int currentDelay = globalDelay;
+	int currentDelay = globalMotorDelay;
 	for (int i = 0; i < steps; i++) {
 		step(currentDelay);
 		currentDelay = incrementDelay(currentDelay);
 	}
-	globalDelay = currentDelay;
+	globalMotorDelay = currentDelay;
 }
 
 // Increments motor delay time by delayIncrement
