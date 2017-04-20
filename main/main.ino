@@ -1,3 +1,19 @@
+#include <Servo.h>
+
+// Servo Constants
+Servo servo;
+const int servoResolution = 2;		// Number of steps per servo degree
+const int minAngle = 0;
+const int maxAngle = 180*servoResolution;
+
+// IR-sensor Constants
+# define analogMax 1023
+const int sensorPin = A0;
+const int sensorThreshold = 80; 	// Threshold value for a read
+const int spanSizeThreshold = 3;
+const int sensorRead = 20;				// Times to read the sensor data
+const int sensorReadThreshold = analogMax*sensorRead*0.10;	// Upperbound for ir
+
 // Direction Variables
 #define lDirection 4
 #define lStep 3
@@ -27,8 +43,18 @@ enum Direction {
 	LEFT, RIGHT, STRAIGHT, BACK
 };
 
+// Ultrasound Constants
+const int maxDistance = 100;		// Maximum distance in cm
+const int minDistance = 10;
+
+const int trigPin = 2;					// Respective pins for ultrasound
+const int echoPin = 3;
+
+
 // Setup
 void setup() {
+	Serial.begin(9600);
+	
 	// Motor Setup
 	pinMode(lOutput, OUTPUT);pinMode(lStep, OUTPUT);pinMode(lDirection, OUTPUT);
 	pinMode(rOutput, OUTPUT);pinMode(rStep, OUTPUT);pinMode(rDirection, OUTPUT);
@@ -36,13 +62,17 @@ void setup() {
 	digitalWrite(rOutput, LOW);digitalWrite(rDirection, LOW);
 	
 	// Servo Setup
+	pinMode(sensorPin, INPUT_PULLUP);
+	servo.attach(13);
 
+	// Ultrasound setup
+	pinMode(trigPin, OUTPUT);pinMode(echoPin, INPUT);
 }
 
 void loop() {
 	// Robo Logic
 	// Scan for signal in 180 degrees in front of robot
-	int angle = scan();
+	int angle = servoScan();
 	int distance;
 
 	// Check if signal out of bounds
@@ -74,6 +104,104 @@ void loop() {
 		}
 	}
 }
+
+/*~~~~~~~~~~ Servo Functions ~~~~~~~~~~*/
+// Scans 0-180 degrees in front of the robot, returns angle for which there is an signal
+int servoScan() {
+	bool clockwiseReadings [maxAngle];
+	bool counterClockwiseReadings [maxAngle];
+	bool combinedReadings [maxAngle];
+
+		// Sweeps the servo from minAngle to maxAngle while collecting the reading
+	for (int i = minAngle; i<maxAngle; i++) {
+		servoTurn(i/servoResolution);
+		clockwiseReadings[i] = readSensor();
+	}
+	// does another sweep backwards
+	for (int i = maxAngle; i>minAngle; i--) {
+		servoTurn(i/servoResolution);
+		counterClockwiseReadings[i] = readSensor();
+	}
+	
+	int spanSize = 0;
+	int spanEnd = 0;
+	int maxSpanSize = 0;
+
+	// Compares the readings from the two sweeps and finds the largest span
+	for (int i = minAngle; i<maxAngle; i++) {
+		// Sets combinedReadings to true if both sweeeps show an positive signal at i
+		if (clockwiseReadings[i] && counterClockwiseReadings[i])
+			combinedReadings[i] = true;
+		
+		// Increases the spanSize for each run
+		if (combinedReadings[i]) {
+			spanSize++;
+		} else if (spanSize != 0) {
+			if (spanSize > maxSpanSize) {
+				maxSpanSize = spanSize;
+				spanEnd = i-1;
+			}
+			spanSize = 0;
+		}
+	}
+
+	// Returns the angle for which there's a signal, returns -1 if nothing found
+	if (maxSpanSize < spanSizeThreshold) {
+		return -1;
+	} else {
+		return (spanEnd-maxSpanSize/2)/servoResolution;
+	}
+}
+
+// Turns servo to the given angle
+void servoTurn(double angle) {
+	servo.write(angle);
+}
+
+// Reads sensor data
+bool readSensor() {
+	int reading = 0;
+
+	// Reads sensor data sensorRead times
+	for (int i = 0; i < sensorRead; i++) {
+		reading += analogRead(A5);	// Data from IR is HIGH when no signal
+	}
+
+	// If reading is less than sensorReadThreshold return true
+	if (reading < sensorReadThreshold)
+		return true;
+	else
+		return false;
+}
+
+/*~~~~~~~~~~ Ultrasound Functions ~~~~~~~~~~*/
+// Gets the distance to object in front of robot
+int getDistance() {
+	sendEcho();
+	return recieveEcho();
+}
+
+// Sends an ultrasound pulse
+void sendEcho() {
+	digitalWrite(trigPin, LOW);
+	delayMicroseconds(2);
+	digitalWrite(trigPin, HIGH);			// Send an exiting pulse
+	delayMicroseconds(10);
+	digitalWrite(trigPin, LOW);
+}
+
+// Recieves an ultrasound pulse and returns the distance
+int recieveEcho() {
+	int distance = pulseIn(echoPin, HIGH)/29/2;
+	
+	pulseIn(echoPin, LOW);
+	if (distance < maxDistance && distance > minDistance) {
+		return distance;
+	} else {
+		return 0;
+	}
+}
+
 
 /*~~~~~~~~~~ Motor Functions ~~~~~~~~~~~~*/
 /* 	The wheels have a radius of 3.4 cm, which results in a circumference
