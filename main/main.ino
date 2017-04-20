@@ -8,7 +8,7 @@ const int maxAngle = 180*servoResolution;
 
 // IR-sensor Constants
 # define analogMax 1023
-const int sensorPin = A0;
+const int sensorPin = A5;
 const int sensorThreshold = 80; 	// Threshold value for a read
 const int spanSizeThreshold = 3;
 const int sensorRead = 20;				// Times to read the sensor data
@@ -50,6 +50,11 @@ const int minDistance = 10;
 const int trigPin = 2;					// Respective pins for ultrasound
 const int echoPin = 3;
 
+// Line Sensor Constants
+const int right = -1;
+const int left	= -1;
+const int lineLeftPin = A3;
+const int lineRightPin = A4;
 
 // Setup
 void setup() {
@@ -65,8 +70,11 @@ void setup() {
 	pinMode(sensorPin, INPUT_PULLUP);
 	servo.attach(13);
 
-	// Ultrasound setup
+	// Ultrasound Setup
 	pinMode(trigPin, OUTPUT);pinMode(echoPin, INPUT);
+	
+	// Line Sensor Setup
+	pinMode(A3, INPUT);pinMode(A4, INPUT);
 }
 
 void loop() {
@@ -164,7 +172,7 @@ bool readSensor() {
 
 	// Reads sensor data sensorRead times
 	for (int i = 0; i < sensorRead; i++) {
-		reading += analogRead(A5);	// Data from IR is HIGH when no signal
+		reading += analogRead(sensorPin);	// Data from IR is HIGH when no signal
 	}
 
 	// If reading is less than sensorReadThreshold return true
