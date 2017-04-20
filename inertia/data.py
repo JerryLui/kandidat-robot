@@ -53,8 +53,9 @@ while 1:
     # Read euler
     euler_x,euler_y,euler_z = bno.read_euler()
 
+    # Serial output
     if counter%100 == 0:
-        print(str(counter)+'\t'+str(sys+accel))
+        print(str(counter)+'\t'+str(sys)+'\t'+str(accel)+'\t'+str(gyro))
 
     tmp = str(counter)+'\t'+str(acc_x)+'\t'+str(acc_y)+'\t'+str(acc_z)+'\t'+str(gyro_x)+'\t'+str(gyro_y)+'\t'+str(gyro_z)+'\t'+str(euler_x)+'\t'+str(euler_y)+'\t'+str(euler_z)+'\t'+str(sys)+'\t'+str(accel)+'\t'+str(gyro)+'\n'
     file.write(tmp)
