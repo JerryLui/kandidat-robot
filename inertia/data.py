@@ -13,7 +13,7 @@ if not bno.begin():
 
 # File Write Configuration
 file = open(time.strftime('accel_measurement_%d-%h.txt', time.localtime()), 'w')
-header = 'acc_x\ty\tz\tgyro_x\ty\tz\tgyro_x\ty\tz\tcsys\tcaccel\tcgyro\n'
+header = 'line\tacc_x\ty\tz\tgyro_x\ty\tz\tgyro_x\ty\tz\tcsys\tcaccel\tcgyro\n'
 file.write(header)
 
 counter = 1
@@ -56,7 +56,7 @@ while 1:
     if counter%100 == 0:
         print(str(counter)+'\t'+str(sys+accel))
 
-    tmp = str(counter)+'\t'+str(acc_x)+'\t'+str(acc_y)+'\t'+str(acc_z)+'\t'+str(gyro_x)+'\t'+str(gyro_y)+'\t'+str(gyro_z)+'\t'+str(euler_x)+'\t'+str(euler_y)+'\t'+str(euler_z)+'\t'+str(sys)+'\t'+str(accel)+'\n'
+    tmp = str(counter)+'\t'+str(acc_x)+'\t'+str(acc_y)+'\t'+str(acc_z)+'\t'+str(gyro_x)+'\t'+str(gyro_y)+'\t'+str(gyro_z)+'\t'+str(euler_x)+'\t'+str(euler_y)+'\t'+str(euler_z)+'\t'+str(sys)+'\t'+str(accel)+'\t'+str(gyro)+'\n'
     file.write(tmp)
     time.sleep(0.003) # Edit depending on output string
     counter = counter + 1
