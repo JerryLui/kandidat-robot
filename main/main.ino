@@ -74,16 +74,22 @@ void setup() {
 	pinMode(trigPin, OUTPUT);pinMode(echoPin, INPUT);
 
 	// Line Sensor Setup
-	pinMode(lineLeftPin, INPUT);
-	pinMode(lineRightPin, INPUT); // Line Sensor Setup
+	pinMode(lineLeftPin, INPUT);pinMode(lineRightPin, INPUT);
+
+	// Test Code
 }
 
+int testVar = 1;
+
 void loop() {
-	navigateLongDistance();
+	if (testVar == 1) {
+		runMotor(300);
+		testVar++;
+	}
 }
 
 /*~~~~~~~~~~ Robot Logic ~~~~~~~~~~*/
-bool navigateLongDistance() {
+void distanceNavigation() {
 	// Robo Logic
 	// Scan for signal in 180 degrees in front of robot
 	int angle = servoScan();
@@ -118,13 +124,16 @@ bool navigateLongDistance() {
 	}
 }
 
-void navigateShortDistance() {
+void dockingNavigation() {
+	globalMotorDelay = motorDelayUpperBound-1000;	// TODO: Set proper value for smooth docking
 	
+	switch (getLineDirection()) {
+	}
 }
 
 /*~~~~~~~~~~ Line Sensor Functions ~~~~~~~~~~*/
 // Line Sensor Test Function
-void printLineData(Direction dir) {
+void debugPrintLineData(Direction dir) {
 	switch (dir) {
 		case LEFT:
 			Serial.println("Left");
@@ -267,9 +276,6 @@ int recieveEcho() {
 
 
 /*~~~~~~~~~~ Motor Functions ~~~~~~~~~~~~*/
-/* 	The wheels have a radius of 3.4 cm, which results in a circumference
-		of 6.8*pi cm. To convert from length to steps we use the constant steps-
-		PerTurn. 																																*/
 // Walks towoards direction in given length in centimeters
 void walk(Direction dir, int length) {
 	direction(dir);
@@ -287,7 +293,11 @@ void walk(Direction dir, int length) {
 	}
 }
 
-// Converts length into motor steps
+/*	Converts length into motor steps
+
+ 		The wheels have a radius of 3.4 cm, which results in a circumference
+		of 6.8*pi cm. To convert from length to steps we use the constant steps-
+		PerTurn seen in the return formula below. 															*/
 int lengthToSteps(int length) {
 	return length/(6.8*pi) * stepsPerTurn;
 }
