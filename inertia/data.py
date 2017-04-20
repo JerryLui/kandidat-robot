@@ -13,7 +13,7 @@ if not bno.begin():
 
 # File Write Configuration
 file = open(time.strftime('accel_measurement_%d-%h.txt', time.localtime()), 'w')
-header = 'x\ty\tz\tcsys\tcaccel\n'
+header = 'acc_x\ty\tz\tgyro_x\ty\tz\tgyro_x\ty\tz\tcsys\tcaccel\tcgyro\n'
 file.write(header)
 
 counter = 1
@@ -25,41 +25,48 @@ while 1:
     # heading, roll, pitch = bno.read_euler()
     # Read the calibration status, 0=uncalibrated and 3=fully calibrated.
     sys, gyro, accel, mag = bno.get_calibration_status()
-    
+
     # Other values you can optionally read:
     # Orientation as a quaternion:
     #x,y,z,w = bno.read_quaterion()
-    
+
     # Sensor temperature in degrees Celsius:
     #temp_c = bno.read_temp()
-    
+
     # Magnetometer data (in micro-Teslas):
     #x,y,z = bno.read_magnetometer()
-    
+
     # Gyroscope data (in degrees per second):
-    #x,y,z = bno.read_gyroscope()
-    
+    gyro_x,gyro_y,gyro_z = bno.read_gyroscope()
+
     # Accelerometer data (in meters per second squared):
     #x,y,z = bno.read_accelerometer()
-    
+
     # Linear acceleration data (i.e. acceleration from movement, not gravity--
     # returned in meters per second squared):
-    x,y,z = bno.read_linear_acceleration()
-    
+    acc_x,acc_y,acc_z = bno.read_linear_acceleration()
+
     # Gravity acceleration data (i.e. acceleration just from gravity--returned
     # in meters per second squared):
     #x,y,z = bno.read_gravity()
-    
-    if counter%200 == 0:
-	print(str(counter)+'\t'+str(sys+accel))
-    
-    tmp = str(counter)+'\t'+str(x)+'\t'+str(y)+'\t'+str(z)+'\t'+str(sys)+'\t'+str(accel)+'\n'
+
+    # Read euler
+    euler_x,euler_y,euler_z = bno.read_euler()
+
+    if counter%100 == 0:
+        print(str(counter)+'\t'+str(sys+accel))
+
+    tmp = str(counter)+'\t'+str(acc_x)+'\t'+str(acc_y)+'\t'+str(acc_z)+'\t'+str(gyro_x)+'\t'+str(gyro_y)+'\t'+str(gyro_z)+'\t'+str(euler_x)+'\t'+str(euler_y)+'\t'+str(euler_z)+'\t'+str(sys)+'\t'+str(accel)+'\n'
     file.write(tmp)
-    time.sleep(0.005)
+    time.sleep(0.003) # Edit depending on output string
     counter = counter + 1
 
 endTime = float(time.time())
 print(endTime-startTime)
 
-
+# From help(BNO055)
+#  get_calibration(self)
+#      Return the sensor's calibration data and return it as an array of
+#      22 bytes. Can be saved and then reloaded with the set_calibration function
+#      to quickly calibrate from a previously calculated set of calibration data.
 
