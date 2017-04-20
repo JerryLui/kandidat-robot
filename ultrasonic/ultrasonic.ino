@@ -6,11 +6,15 @@ const int trigPin = 2;					// Respective pins for ultrasound
 const int echoPin = 3;
 
 void setup() {
+	Serial.begin(9600);
 	// Ultrasound setup
 	pinMode(trigPin, OUTPUT);pinMode(echoPin, INPUT);
 }
 
 void loop() {
+	delay(1000);
+	Serial.print("Distance: ");
+	Serial.println(getDistance());
 }
 
 // Gets the distance to object in front of robot
