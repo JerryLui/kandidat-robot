@@ -38,11 +38,6 @@ const double pi = 3.1416;
 // Global Variables
 int globalMotorDelay = motorDelayLowerBound;
 
-// Motor Directions
-enum Direction {
-	LEFT, RIGHT, STRAIGHT, BACK
-};
-
 // Ultrasound Constants
 const int maxDistance = 100;		// Maximum distance in cm
 const int minDistance = 10;
@@ -51,46 +46,56 @@ const int trigPin = 2;					// Respective pins for ultrasound
 const int echoPin = 3;
 
 // Line Sensor Constants
-const int right = -1;
-const int left	= -1;
+#define lineThreshold 30
+
 const int lineLeftPin = A3;
 const int lineRightPin = A4;
+
+// Directions
+enum Direction {
+	LEFT, RIGHT, STRAIGHT, BACK, UNKNOWN
+};
 
 // Setup
 void setup() {
 	Serial.begin(9600);
-	
+
 	// Motor Setup
 	pinMode(lOutput, OUTPUT);pinMode(lStep, OUTPUT);pinMode(lDirection, OUTPUT);
 	pinMode(rOutput, OUTPUT);pinMode(rStep, OUTPUT);pinMode(rDirection, OUTPUT);
 	digitalWrite(lOutput, LOW);digitalWrite(lDirection, HIGH);
 	digitalWrite(rOutput, LOW);digitalWrite(rDirection, LOW);
-	
+
 	// Servo Setup
 	pinMode(sensorPin, INPUT_PULLUP);
 	servo.attach(13);
 
 	// Ultrasound Setup
 	pinMode(trigPin, OUTPUT);pinMode(echoPin, INPUT);
-	
+
 	// Line Sensor Setup
-	pinMode(A3, INPUT);pinMode(A4, INPUT);
+	pinMode(lineLeftPin, INPUT);
+	pinMode(lineRightPin, INPUT); // Line Sensor Setup
 }
 
 void loop() {
+	navigateLongDistance();
+}
+
+/*~~~~~~~~~~ Robot Logic ~~~~~~~~~~*/
+bool navigateLongDistance() {
 	// Robo Logic
 	// Scan for signal in 180 degrees in front of robot
 	int angle = servoScan();
 	int distance;
 
 	// Check if signal out of bounds
-	if (angle < 0 || angle > 180) {} 
-	else if (angle > 95) {
+	if (angle < 0 || angle > 180)
+		turnAround();	
+	else if (angle > 95) 
 		turn(LEFT, abs(90-angle));	// Rotate robot by given angular difference
-	} 
-	else if (angle < 85) {
+	else if (angle < 85) 
 		turn(RIGHT, abs(90-angle)); // Rotate robot by given anlgular difference
-	} 
 	else {
 		// Turns IR-sensor towoards signal
 		servoTurn(angle);
@@ -113,6 +118,56 @@ void loop() {
 	}
 }
 
+void navigateShortDistance() {
+	
+}
+
+/*~~~~~~~~~~ Line Sensor Functions ~~~~~~~~~~*/
+// Line Sensor Test Function
+void printLineData(Direction dir) {
+	switch (dir) {
+		case LEFT:
+			Serial.println("Left");
+			break;
+		case RIGHT:
+			Serial.println("Right");
+			break;
+		case STRAIGHT:
+			Serial.println("Straight");
+			break;
+		case BACK:
+			Serial.println("Back");
+			break;
+		case UNKNOWN:
+			Serial.println("Unknown");
+			break;
+	}
+}
+
+// Reads data from line sensors, returns direction to go towoards
+Direction getLineDirection() {
+	bool leftData = readLeftLineSensor();
+	bool rightData = readRightLineSensor();
+
+	if (!leftData && !rightData)
+		return UNKNOWN;
+	else if (leftData && !rightData)
+		return RIGHT;
+	else if (!leftData && rightData)
+		return LEFT;
+	else
+		return STRAIGHT;
+}
+// Reads data from left line sensor, returns true if on a line
+bool readLeftLineSensor() {
+	return analogRead(lineLeftPin) > lineThreshold;
+}
+
+// Reads data from right line sensor, returns true if on a line
+bool readRightLineSensor() {
+	return analogRead(lineRightPin) > lineThreshold;
+}
+
 /*~~~~~~~~~~ Servo Functions ~~~~~~~~~~*/
 // Scans 0-180 degrees in front of the robot, returns angle for which there is an signal
 int servoScan() {
@@ -120,7 +175,7 @@ int servoScan() {
 	bool counterClockwiseReadings [maxAngle];
 	bool combinedReadings [maxAngle];
 
-		// Sweeps the servo from minAngle to maxAngle while collecting the reading
+	// Sweeps the servo from minAngle to maxAngle while collecting the reading
 	for (int i = minAngle; i<maxAngle; i++) {
 		servoTurn(i/servoResolution);
 		clockwiseReadings[i] = readSensor();
@@ -130,7 +185,7 @@ int servoScan() {
 		servoTurn(i/servoResolution);
 		counterClockwiseReadings[i] = readSensor();
 	}
-	
+
 	int spanSize = 0;
 	int spanEnd = 0;
 	int maxSpanSize = 0;
@@ -140,7 +195,7 @@ int servoScan() {
 		// Sets combinedReadings to true if both sweeeps show an positive signal at i
 		if (clockwiseReadings[i] && counterClockwiseReadings[i])
 			combinedReadings[i] = true;
-		
+
 		// Increases the spanSize for each run
 		if (combinedReadings[i]) {
 			spanSize++;
@@ -201,7 +256,7 @@ void sendEcho() {
 // Recieves an ultrasound pulse and returns the distance
 int recieveEcho() {
 	int distance = pulseIn(echoPin, HIGH)/29/2;
-	
+
 	pulseIn(echoPin, LOW);
 	if (distance < maxDistance && distance > minDistance) {
 		return distance;
@@ -294,6 +349,7 @@ void turnAround() {
 	turnAround(LEFT);
 }
 
+// Turns around 180 degree in the given direction
 void turnAround(Direction dir) {
 	turn(dir, 180);
 }
