@@ -58,6 +58,7 @@ enum Direction {
 
 // Setup
 void setup() {
+	// Initiate Serial Contact (for debug purposes)
 	Serial.begin(9600);
 
 	// Motor Setup
@@ -75,16 +76,13 @@ void setup() {
 
 	// Line Sensor Setup
 	pinMode(lineLeftPin, INPUT);pinMode(lineRightPin, INPUT);
-
-	// Test Code
 }
 
 int testVar = 1;
 
 void loop() {
 	if (testVar == 1) {
-		runMotor(300);
-		testVar++;
+		debugMotorFunctions();
 	}
 }
 
@@ -114,7 +112,7 @@ void distanceNavigation() {
 				longWalk(STRAIGHT, 10);
 			}
 			// If distance longer than ultrasound lower bound walk all the way towoards it
-			else if (distance > 10) {
+			else if (distance > 40) {
 				longWalk(STRAIGHT, 0.95*distance);
 			}
 			else if (distance < 10) {
@@ -124,7 +122,8 @@ void distanceNavigation() {
 	}
 }
 
-void dockingNavigation() {
+// Navigation for docking, returns false at end of path
+bool dockingNavigation() {
 	dir = getLineDirection();
 	switch (dir) {
 		case LEFT:
@@ -136,17 +135,15 @@ void dockingNavigation() {
 		case STRAIGHT:
 			shortWalk(dir, 20);
 			break;
-		case BACK:
-			shortWalk(dir, 20);
-			break;
 		case UNKNOWN:
+			shortWalk(STRAIGHT, 20);
 			break;
 	}
 }
 
 /*~~~~~~~~~~ Line Sensor Functions ~~~~~~~~~~*/
 // Line Sensor Test Function
-void debugPrintLineData(Direction dir) {
+void debugPrintDirection(Direction dir) {
 	switch (dir) {
 		case LEFT:
 			Serial.println("Left");
@@ -290,7 +287,7 @@ int recieveEcho() {
 /*~~~~~~~~~~ Motor Functions ~~~~~~~~~~~~*/
 // Tests motor functions
 void debugMotorFunctions() {
-	int debugDelayMillis = 1000;
+	int debugDelayMillis = 800;
 
 	// Long Walk Functions
 	longWalk(LEFT, 5);
