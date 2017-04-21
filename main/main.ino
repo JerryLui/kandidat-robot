@@ -1,5 +1,9 @@
 #include <Servo.h>
 
+// Global Constants
+# define analogMax 1023
+# define pi 3.1416
+
 // Servo Constants
 Servo servo;
 const int servoResolution = 2;		// Number of steps per servo degree
@@ -7,8 +11,8 @@ const int minAngle = 0;
 const int maxAngle = 180*servoResolution;
 
 // IR-sensor Constants
-# define analogMax 1023
 const int sensorPin = A5;
+
 const int sensorThreshold = 80; 	// Threshold value for a read
 const int spanSizeThreshold = 3;
 const int sensorRead = 20;				// Times to read the sensor data
@@ -32,18 +36,15 @@ const int motorDelayLowerBound = 2000;
 const int delayIncrement = 40;
 const int accelerationLength = (motorDelayUpperBound-motorDelayLowerBound)/delayIncrement;
 
-// Global Constants
-const double pi = 3.1416;
-
 // Global Variables
 int globalMotorDelay = motorDelayLowerBound;
 
 // Ultrasound Constants
-const int maxDistance = 100;		// Maximum distance in cm
-const int minDistance = 10;
-
 const int trigPin = 2;					// Respective pins for ultrasound
 const int echoPin = 3;
+
+const int maxDistance = 100;		// Maximum distance in cm
+const int minDistance = 10;
 
 // Line Sensor Constants
 #define lineThreshold 30
@@ -87,11 +88,10 @@ void loop() {
 }
 
 /*~~~~~~~~~~ Robot Logic ~~~~~~~~~~*/
-void distanceNavigation() {
+void navigate() {
 	// Robo Logic
 	// Scan for signal in 180 degrees in front of robot
 	int angle = servoScan();
-	int distance;
 
 	// Check if signal out of bounds
 	if (angle < 0 || angle > 180)
@@ -100,46 +100,54 @@ void distanceNavigation() {
 		turn(LEFT, abs(90-angle));	// Rotate robot by given angular difference
 	else if (angle < 85) 
 		turn(RIGHT, abs(90-angle)); // Rotate robot by given anlgular difference
-	else {
-		// Turns IR-sensor towoards signal
-		servoTurn(angle);
-		// While there's a signal, go towoards it
-		while (readSensor()) {
-			// Retrieve distance from ultrasound sensor
-			distance = getDistance();
-			// If distance longer than 1m: walk towoards signal with small steps 
-			if (distance > 100) {
-				longWalk(STRAIGHT, 10);
-			}
-			// If distance longer than ultrasound lower bound walk all the way towoards it
-			else if (distance > 40) {
-				longWalk(STRAIGHT, 0.95*distance);
-			}
-			else if (distance < 10) {
-				// CLOSE RANGE CODE
-			}
+	else {												// Else, signal is straight ahead
+		if (getLineDirection() == STRAIGHT) {	// While no line detected 
+			distanceNavigation(angle);
+		} else {
+			dockingNavigation(getLineDirection());
 		}
 	}
 }
 
-// Navigation for docking, returns false at end of path
-bool dockingNavigation() {
-	dir = getLineDirection();
-	switch (dir) {
-		case LEFT:
-			shortWalk(dir, 20);
-			break;
-		case RIGHT:
-			shortWalk(dir, 20);
-			break;
-		case STRAIGHT:
-			shortWalk(dir, 20);
-			break;
-		case UNKNOWN:
-			shortWalk(STRAIGHT, 20);
-			break;
+// Navigation for long distance
+void distanceNavigation(int angle) {
+	int distance;
+	Direction lineDirection = getLineDirection();
+
+	// Turns IR-sensor towoards signal
+	servoTurn(angle);
+
+	// While there's a signal and no lines are detected
+	while (lineDirection == STRAIGHT && readSensor()) {
+		// Retrieve distance from ultrasound sensor
+		distance = getDistance();
+		// If distance longer than 1m: walk towoards signal with small steps 
+		if (distance > 100 || distance < 10) {
+			longWalk(STRAIGHT, 10);
+		}
+		// If distance longer than ultrasound lower bound walk all the way towoards it
+		else if (distance > 20) {
+			longWalk(STRAIGHT, 0.95*distance);
+		}
 	}
 }
+
+// Navigation for docking
+void dockingNavigation(Direction dir) {
+	while (!inDock(dir)) {
+		shortWalk(dir, 10);
+		dir = getLineDirection();
+	}
+}
+
+// Checks if in dock
+bool inDock(Direction dir) {
+	if (dir == UNKNOWN) 
+		return true;
+	else
+		return false;
+}
+
 
 /*~~~~~~~~~~ Line Sensor Functions ~~~~~~~~~~*/
 // Line Sensor Test Function
@@ -169,13 +177,13 @@ Direction getLineDirection() {
 	bool rightData = readRightLineSensor();
 
 	if (!leftData && !rightData)
-		return UNKNOWN;
+		return STRAIGHT; // When no line found
 	else if (leftData && !rightData)
-		return RIGHT;
+		return RIGHT; 	// When line detected on left sensor
 	else if (!leftData && rightData)
-		return LEFT;
+		return LEFT;		// When line detected on right sensor
 	else
-		return STRAIGHT;
+		return UNKNOWN;	// When line found
 }
 // Reads data from left line sensor, returns true if on a line
 bool readLeftLineSensor() {
@@ -188,6 +196,12 @@ bool readRightLineSensor() {
 }
 
 /*~~~~~~~~~~ Servo Functions ~~~~~~~~~~*/
+// Debug Servo
+void debugPrintServoScan() {
+	Serial.print("Angle: ");
+	Serial.println(servoScan());
+}
+
 // Scans 0-180 degrees in front of the robot, returns angle for which there is an signal
 int servoScan() {
 	bool clockwiseReadings [maxAngle];
@@ -257,6 +271,12 @@ bool readSensor() {
 }
 
 /*~~~~~~~~~~ Ultrasound Functions ~~~~~~~~~~*/
+// Print distance data from ultrasound
+void debugPrintUltrasound() {
+	Serial.print("Distance: ");
+	Serial.println(getDistance());
+}
+
 // Gets the distance to object in front of robot
 int getDistance() {
 	sendEcho();
@@ -294,9 +314,11 @@ void debugMotorFunctions() {
 	delay(debugDelayMillis);
 	longWalk(RIGHT, 5);
 	delay(debugDelayMillis);
+	longWalk(STRAIGHT, 20);
+	delay(debugDelayMillis);
 	longWalk(STRAIGHT, 5);
 	delay(debugDelayMillis);
-	longWalk(BACK, 5);
+	longWalk(BACK, 10);
 	delay(debugDelayMillis);
 
 	// Short Walk Functions
@@ -358,29 +380,28 @@ int lengthToSteps(int length) {
 // Turns towoards direction by given angle
 void turn(Direction dir, int angle) {
 	if (dir != LEFT || dir != RIGHT) {}
-	else (
-			direction(dir);
-			globalMotorDelay = motorDelayLowerBound;
-			runMotor(angle/180*stepsPerTurn);
-			}
-			}
+	else {
+		direction(dir);
+		globalMotorDelay = motorDelayLowerBound;
+		runMotor(angle/180*stepsPerTurn);
+	}
+}
+// Runs motor for given amount of steps
+void runMotor(int steps) {
+	for (int i = 0; i < steps; i++) {
+		step(globalMotorDelay);
+	}
+}
 
-			// Runs motor for given amount of steps
-			void runMotor(int steps) {
-			for (int i = 0; i < steps; i++) {
-			step(globalMotorDelay);
-			}
-			}
-
-			// Accelerates in given number of steps, returns the current motor delay
-			void accelerate(int steps) {
-			int currentDelay = motorDelayUpperBound;
-			for (int i = 0; i < steps; i++) {
-			step(currentDelay);
-			currentDelay = decrementDelay(currentDelay);
-			}
-			globalMotorDelay = currentDelay;
-			}
+// Accelerates in given number of steps, returns the current motor delay
+void accelerate(int steps) {
+	int currentDelay = motorDelayUpperBound;
+	for (int i = 0; i < steps; i++) {
+		step(currentDelay);
+		currentDelay = decrementDelay(currentDelay);
+	}
+	globalMotorDelay = currentDelay;
+}
 
 // Deaccelerates in given number of steps, returns the current motor delay
 void deaccelerate(int steps) {
