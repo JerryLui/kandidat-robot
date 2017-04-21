@@ -79,11 +79,20 @@ void setup() {
 	pinMode(lineLeftPin, INPUT);pinMode(lineRightPin, INPUT);
 }
 
-int testVar = 1;
-
+int test = 1;
+// Main Loop
 void loop() {
-	if (testVar == 1) {
+	if (test == 1) {
 		debugMotorFunctions();
+		test++;
+	}
+	else if (test == 2) {
+		debugPrintDirection(getLineDirection());
+		test++;
+	}
+	else if (test == 3) {
+		debugPrintServoScan() {
+		test++;
 	}
 }
 
@@ -132,7 +141,7 @@ void distanceNavigation(int angle) {
 	}
 }
 
-// Navigation for docking
+// Navigation for docking 
 void dockingNavigation(Direction dir) {
 	while (!inDock(dir)) {
 		shortWalk(dir, 10);
@@ -152,6 +161,7 @@ bool inDock(Direction dir) {
 /*~~~~~~~~~~ Line Sensor Functions ~~~~~~~~~~*/
 // Line Sensor Test Function
 void debugPrintDirection(Direction dir) {
+	Serial.print("Direction: ");
 	switch (dir) {
 		case LEFT:
 			Serial.println("Left");
@@ -223,6 +233,10 @@ int servoScan() {
 	int spanEnd = 0;
 	int maxSpanSize = 0;
 
+	// Experimental method of calculating signal pos
+	int simpleMovingAverage = 0;
+	int elements = 0;
+
 	// Compares the readings from the two sweeps and finds the largest span
 	for (int i = minAngle; i<maxAngle; i++) {
 		// Sets combinedReadings to true if both sweeeps show an positive signal at i
@@ -232,6 +246,10 @@ int servoScan() {
 		// Increases the spanSize for each run
 		if (combinedReadings[i]) {
 			spanSize++;
+			if (spanSize > 1) {							// TODO: Test experimental method of calculating signal pos
+				simpleMovingAverage += i;
+				elements++;
+			}
 		} else if (spanSize != 0) {
 			if (spanSize > maxSpanSize) {
 				maxSpanSize = spanSize;
