@@ -37,7 +37,7 @@ const int delayIncrement = 40;
 const int accelerationLength = (motorDelayUpperBound-motorDelayLowerBound)/delayIncrement;
 
 // Global Variables
-int globalMotorDelay = motorDelayLowerBound;
+unsigned int globalMotorDelay = motorDelayLowerBound;
 
 // Ultrasound Constants
 const int trigPin = 2;					// Respective pins for ultrasound
@@ -73,10 +73,12 @@ void setup() {
 	servo.attach(13);
 
 	// Ultrasound Setup
-	pinMode(trigPin, OUTPUT);pinMode(echoPin, INPUT);
+	pinMode(trigPin, OUTPUT);
+	pinMode(echoPin, INPUT);
 
 	// Line Sensor Setup
-	pinMode(lineLeftPin, INPUT);pinMode(lineRightPin, INPUT);
+	pinMode(lineLeftPin, INPUT);
+	pinMode(lineRightPin, INPUT);
 }
 
 int test = 1;
@@ -87,12 +89,16 @@ void loop() {
 		test++;
 	}
 	else if (test == 2) {
-		debugPrintDirection(getLineDirection());
+		// debugPrintDirection(getLineDirection());
 		test++;
 	}
 	else if (test == 3) {
-		debugPrintServoScan() {
-		test++;
+		debugPrintServoScan(); 
+			test++;
+	}
+	else if (test == 4) {
+		debugPrintUltrasound();
+		test++;	
 	}
 }
 
@@ -104,7 +110,7 @@ void navigate() {
 
 	// Check if signal out of bounds
 	if (angle < 0 || angle > 180)
-		turnAround();	
+		turnAround();
 	else if (angle > 95) 
 		turn(LEFT, abs(90-angle));	// Rotate robot by given angular difference
 	else if (angle < 85) 
@@ -132,11 +138,13 @@ void distanceNavigation(int angle) {
 		distance = getDistance();
 		// If distance longer than 1m: walk towoards signal with small steps 
 		if (distance > 100 || distance < 10) {
-			longWalk(STRAIGHT, 10);
+			longWalk(STRAIGHT, 12);
 		}
 		// If distance longer than ultrasound lower bound walk all the way towoards it
 		else if (distance > 20) {
 			longWalk(STRAIGHT, 0.95*distance);
+		} else {
+			shortWalk(STRAIGHT, 20);
 		}
 	}
 }
@@ -144,7 +152,7 @@ void distanceNavigation(int angle) {
 // Navigation for docking 
 void dockingNavigation(Direction dir) {
 	while (!inDock(dir)) {
-		shortWalk(dir, 10);
+		shortWalk(dir, 20);
 		dir = getLineDirection();
 	}
 }
@@ -328,18 +336,20 @@ void debugMotorFunctions() {
 	int debugDelayMillis = 800;
 
 	// Long Walk Functions
+	Serial.println("Testing longWalk()");
 	longWalk(LEFT, 5);
 	delay(debugDelayMillis);
 	longWalk(RIGHT, 5);
 	delay(debugDelayMillis);
-	longWalk(STRAIGHT, 20);
+	longWalk(STRAIGHT, 50);
 	delay(debugDelayMillis);
-	longWalk(STRAIGHT, 5);
+	longWalk(STRAIGHT, 10);
 	delay(debugDelayMillis);
 	longWalk(BACK, 10);
 	delay(debugDelayMillis);
 
 	// Short Walk Functions
+	Serial.println("Testing shortWalk()");
 	shortWalk(LEFT, 20);
 	delay(debugDelayMillis);
 	shortWalk(RIGHT, 20);
@@ -350,6 +360,7 @@ void debugMotorFunctions() {
 	delay(debugDelayMillis);
 
 	// Turn Functions
+	Serial.println("Testing turn()");
 	turn(LEFT, 45);
 	delay(debugDelayMillis);
 	turn(LEFT, 135);
@@ -401,9 +412,10 @@ void turn(Direction dir, int angle) {
 	else {
 		direction(dir);
 		globalMotorDelay = motorDelayLowerBound;
-		runMotor(angle/180*stepsPerTurn);
+		runMotor((angle/180)*stepsPerTurn);
 	}
 }
+
 // Runs motor for given amount of steps
 void runMotor(int steps) {
 	for (int i = 0; i < steps; i++) {
