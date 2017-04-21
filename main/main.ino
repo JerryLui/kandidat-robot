@@ -247,8 +247,8 @@ int servoScan() {
 		if (combinedReadings[i]) {
 			spanSize++;
 			if (spanSize > 1) {							// TODO: Test experimental method of calculating signal pos
-				simpleMovingAverage += i;
-				elements++;
+				simpleMovingAverage += i; 		// Current method finds the maximum span of signals found
+				elements++;										// SMA finds the average signal pos from measurements
 			}
 		} else if (spanSize != 0) {
 			if (spanSize > maxSpanSize) {
