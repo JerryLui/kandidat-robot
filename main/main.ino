@@ -40,8 +40,8 @@ const int accelerationLength = (motorDelayUpperBound-motorDelayLowerBound)/delay
 unsigned int globalMotorDelay = motorDelayLowerBound;
 
 // Ultrasound Constants
-const int trigPin = 2;					// Respective pins for ultrasound
-const int echoPin = 3;
+const int trigPin = 12;					// Respective pins for ultrasound
+const int echoPin = 13;
 
 const int maxDistance = 100;		// Maximum distance in cm
 const int minDistance = 10;
@@ -85,7 +85,7 @@ int test = 1;
 // Main Loop
 void loop() {
 	if (test == 1) {
-		debugMotorFunctions();
+		// debugMotorFunctions();
 		test++;
 	}
 	else if (test == 2) {
@@ -94,10 +94,10 @@ void loop() {
 	}
 	else if (test == 3) {
 		debugPrintServoScan(); 
-			test++;
+		// test++;
 	}
 	else if (test == 4) {
-		debugPrintUltrasound();
+		// debugPrintUltrasound();
 		test++;	
 	}
 }
@@ -277,6 +277,7 @@ int servoScan() {
 
 // Turns servo to the given angle
 void servoTurn(double angle) {
+	delay(100);
 	servo.write(angle);
 }
 
@@ -286,7 +287,11 @@ bool readSensor() {
 
 	// Reads sensor data sensorRead times
 	for (int i = 0; i < sensorRead; i++) {
-		reading += analogRead(sensorPin);	// Data from IR is HIGH when no signal
+		int majs = analogRead(sensorPin);
+		Serial.println(majs);
+		reading += majs;	
+		delay(800);
+		// reading += analogRead(sensorPin);	// Data from IR is HIGH when no signal
 	}
 
 	// If reading is less than sensorReadThreshold return true
@@ -341,9 +346,9 @@ void debugMotorFunctions() {
 	delay(debugDelayMillis);
 	longWalk(RIGHT, 5);
 	delay(debugDelayMillis);
-	longWalk(STRAIGHT, 50);
+	longWalk(STRAIGHT, 30);
 	delay(debugDelayMillis);
-	longWalk(STRAIGHT, 10);
+	longWalk(STRAIGHT, 8);
 	delay(debugDelayMillis);
 	longWalk(BACK, 10);
 	delay(debugDelayMillis);
@@ -407,12 +412,12 @@ int lengthToSteps(int length) {
 }
 
 // Turns towoards direction by given angle
-void turn(Direction dir, int angle) {
-	if (dir != LEFT || dir != RIGHT) {}
+void turn(Direction dir, double angle) {
+	if (dir != LEFT && dir != RIGHT) {}
 	else {
 		direction(dir);
 		globalMotorDelay = motorDelayLowerBound;
-		runMotor((angle/180)*stepsPerTurn);
+		runMotor((angle/180.0)*stepsPerTurn);
 	}
 }
 
