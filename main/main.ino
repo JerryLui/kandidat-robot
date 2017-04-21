@@ -111,11 +111,11 @@ void distanceNavigation() {
 			distance = getDistance();
 			// If distance longer than 1m: walk towoards signal with small steps 
 			if (distance > 100) {
-				walk(STRAIGHT, 10);
+				longWalk(STRAIGHT, 10);
 			}
 			// If distance longer than ultrasound lower bound walk all the way towoards it
 			else if (distance > 10) {
-				walk(STRAIGHT, 0.95*distance);
+				longWalk(STRAIGHT, 0.95*distance);
 			}
 			else if (distance < 10) {
 				// CLOSE RANGE CODE
@@ -125,9 +125,22 @@ void distanceNavigation() {
 }
 
 void dockingNavigation() {
-	globalMotorDelay = motorDelayUpperBound-1000;	// TODO: Set proper value for smooth docking
-	
-	switch (getLineDirection()) {
+	dir = getLineDirection();
+	switch (dir) {
+		case LEFT:
+			shortWalk(dir, 20);
+			break;
+		case RIGHT:
+			shortWalk(dir, 20);
+			break;
+		case STRAIGHT:
+			shortWalk(dir, 20);
+			break;
+		case BACK:
+			shortWalk(dir, 20);
+			break;
+		case UNKNOWN:
+			break;
 	}
 }
 
@@ -274,10 +287,46 @@ int recieveEcho() {
 	}
 }
 
-
 /*~~~~~~~~~~ Motor Functions ~~~~~~~~~~~~*/
+// Tests motor functions
+void debugMotorFunctions() {
+	int debugDelayMillis = 1000;
+
+	// Long Walk Functions
+	longWalk(LEFT, 5);
+	delay(debugDelayMillis);
+	longWalk(RIGHT, 5);
+	delay(debugDelayMillis);
+	longWalk(STRAIGHT, 5);
+	delay(debugDelayMillis);
+	longWalk(BACK, 5);
+	delay(debugDelayMillis);
+
+	// Short Walk Functions
+	shortWalk(LEFT, 20);
+	delay(debugDelayMillis);
+	shortWalk(RIGHT, 20);
+	delay(debugDelayMillis);
+	shortWalk(STRAIGHT, 20);
+	delay(debugDelayMillis);
+	shortWalk(BACK, 20);
+	delay(debugDelayMillis);
+
+	// Turn Functions
+	turn(LEFT, 45);
+	delay(debugDelayMillis);
+	turn(LEFT, 135);
+	delay(debugDelayMillis);
+	turn(RIGHT, 45);
+	delay(debugDelayMillis);
+	turn(RIGHT, 135);
+	delay(debugDelayMillis);
+	turn(STRAIGHT, 45);
+	delay(debugDelayMillis);
+}
+
 // Walks towoards direction in given length in centimeters
-void walk(Direction dir, int length) {
+void longWalk(Direction dir, int length) {
 	direction(dir);
 
 	int steps = lengthToSteps(length);
@@ -293,9 +342,16 @@ void walk(Direction dir, int length) {
 	}
 }
 
+// Short walk without acceleration and deacceleration
+void shortWalk(Direction dir, int steps) {
+	globalMotorDelay = motorDelayUpperBound;
+	direction(dir);
+	runMotor(steps);
+}
+
 /*	Converts length into motor steps
 
- 		The wheels have a radius of 3.4 cm, which results in a circumference
+		The wheels have a radius of 3.4 cm, which results in a circumference
 		of 6.8*pi cm. To convert from length to steps we use the constant steps-
 		PerTurn seen in the return formula below. 															*/
 int lengthToSteps(int length) {
@@ -304,27 +360,30 @@ int lengthToSteps(int length) {
 
 // Turns towoards direction by given angle
 void turn(Direction dir, int angle) {
-	direction(dir);
-	globalMotorDelay = motorDelayLowerBound;
-	runMotor(angle/180*stepsPerTurn);
-}
+	if (dir != LEFT || dir != RIGHT) {}
+	else (
+			direction(dir);
+			globalMotorDelay = motorDelayLowerBound;
+			runMotor(angle/180*stepsPerTurn);
+			}
+			}
 
-// Runs motor for given amount of steps
-void runMotor(int steps) {
-	for (int i = 0; i < steps; i++) {
-		step(globalMotorDelay);
-	}
-}
+			// Runs motor for given amount of steps
+			void runMotor(int steps) {
+			for (int i = 0; i < steps; i++) {
+			step(globalMotorDelay);
+			}
+			}
 
-// Accelerates in given number of steps, returns the current motor delay
-void accelerate(int steps) {
-	int currentDelay = motorDelayUpperBound;
-	for (int i = 0; i < steps; i++) {
-		step(currentDelay);
-		currentDelay = decrementDelay(currentDelay);
-	}
-	globalMotorDelay = currentDelay;
-}
+			// Accelerates in given number of steps, returns the current motor delay
+			void accelerate(int steps) {
+			int currentDelay = motorDelayUpperBound;
+			for (int i = 0; i < steps; i++) {
+			step(currentDelay);
+			currentDelay = decrementDelay(currentDelay);
+			}
+			globalMotorDelay = currentDelay;
+			}
 
 // Deaccelerates in given number of steps, returns the current motor delay
 void deaccelerate(int steps) {
