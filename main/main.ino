@@ -241,10 +241,6 @@ int servoScan() {
 	int spanEnd = 0;
 	int maxSpanSize = 0;
 
-	// Experimental method of calculating signal pos
-	int simpleMovingAverage = 0;
-	int elements = 0;
-
 	// Compares the readings from the two sweeps and finds the largest span
 	for (int i = minAngle; i<maxAngle; i++) {
 		// Sets combinedReadings to true if both sweeeps show an positive signal at i
@@ -254,10 +250,6 @@ int servoScan() {
 		// Increases the spanSize for each run
 		if (combinedReadings[i]) {
 			spanSize++;
-			if (spanSize > 1) {							// TODO: Test experimental method of calculating signal pos
-				simpleMovingAverage += i; 		// Current method finds the maximum span of signals found
-				elements++;										// SMA finds the average signal pos from measurements
-			}
 		} else if (spanSize != 0) {
 			if (spanSize > maxSpanSize) {
 				maxSpanSize = spanSize;
@@ -273,6 +265,60 @@ int servoScan() {
 	} else {
 		return (spanEnd-maxSpanSize/2)/servoResolution;
 	}
+}
+
+// An alternative method using average of positive signals
+int averageServoScan() {
+	// Variables to hold the average
+	int total = 0; 
+	int elements = 0;
+	int spanSize = 0;
+
+	// Sweeps the servo from minAngle to maxAngle while collecting the reading
+	for (int i = minAngle; i<maxAngle; i++) {
+		servoTurn(i/servoResolution);
+		if (readSensor() && spanSize++ > 1) {
+			total += i;
+			elements++;
+		} else if (spanSize > 1) {
+			total -= i-1;
+			elements--;
+			spanSize = 0;
+		} else {
+			spanSize = 0;
+		}
+	}
+
+	// Stores the average of signal position
+	int firstSweepAverage = total/elements;
+
+	// Resets variables
+	total = 0; elements = 0; spanSize = 0;
+
+	// does another sweep backwards
+	for (int i = maxAngle; i>minAngle; i--) {
+		servoTurn(i/servoResolution);
+		if (readSensor() && spanSize++ > 1) {
+			total += i;
+			elements++;
+		} else if (spanSize > 1) {
+			total -= i-1;
+			elements--;
+			spanSize = 0;
+		} else {
+			spanSize = 0;
+		}
+	}
+
+	// Stores the average pos from second sweep
+	int secondSweepAverage = total/elements;
+
+	// Returns -1 if difference between the result from first & second sweep are
+	// larger than 5 degrees. Else returns the angle at which a signal was found.
+	if ((secondSweepAverage-firstSweepAverage) > 5)
+		return -1;
+	else
+		return ((firstSweepAverage + secondSweepAverage)/2)/servoResolution;
 }
 
 // Turns servo to the given angle
