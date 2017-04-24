@@ -98,7 +98,7 @@ int servoScan() {
 int averageServoScan() {
 	// Stores the average of signal position
 	int firstSweepAverage = averageSweep(minAngle, maxAngle);
-	Serial.println(firstSweepAverage);
+	//Serial.println(firstSweepAverage);
 
 	// Stores the average pos from second sweep
 	int secondSweepAverage = averageSweep(maxAngle, minAngle);
