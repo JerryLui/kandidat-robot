@@ -6,17 +6,19 @@
 
 // Servo Constants
 Servo servo;
+#define servoPin 13
+
+const int servoThreshold  = 80;
 const int servoResolution = 2;		// Number of steps per servo degree
 const int minAngle = 0;
 const int maxAngle = 180*servoResolution;
 
 // IR-sensor Constants
-const int sensorPin = A5;
+const int sensorPin = A3;
 
-const int sensorThreshold = 80; 	// Threshold value for a read
 const int spanSizeThreshold = 3;
 const int sensorRead = 20;				// Times to read the sensor data
-const int sensorReadThreshold = analogMax*sensorRead*0.10;	// Upperbound for ir
+const int sensorReadThreshold = analogMax*sensorRead*0.8;	// Upperbound for ir 0.64
 
 // Direction Variables
 #define lDirection 4
@@ -40,8 +42,8 @@ const int accelerationLength = (motorDelayUpperBound-motorDelayLowerBound)/delay
 unsigned int globalMotorDelay = motorDelayLowerBound;
 
 // Ultrasound Constants
-const int trigPin = 11;					// Respective pins for ultrasound
-const int echoPin = 10;
+#define trigPin 11		// Respective pins for ultrasound
+#define echoPin 10
 
 const int maxDistance = 100;		// Maximum distance in cm
 const int minDistance = 10;
@@ -49,7 +51,7 @@ const int minDistance = 10;
 // Line Sensor Constants
 #define lineThreshold 30
 
-const int lineLeftPin = A3;
+const int lineLeftPin = A5;
 const int lineRightPin = A4;
 
 // Directions
@@ -70,7 +72,7 @@ void setup() {
 
 	// Servo Setup
 	pinMode(sensorPin, INPUT_PULLUP);
-	servo.attach(13);
+	servo.attach(servoPin);
 
 	// Ultrasound Setup
 	pinMode(trigPin, OUTPUT);
@@ -85,23 +87,29 @@ int test = 1;
 // Main Loop
 void loop() {
 	if (test == 1) {
+		dockingNavigation(STRAIGHT);
 		// debugMotorFunctions();
-		test++;
+		test = 10;
 	}
 	else if (test == 2) {
 		// debugPrintDirection(getLineDirection());
 		test++;
+		Serial.println(sensorReadThreshold);
 	}
 	else if (test == 3) {
-		// debugPrintServoScan(); 
-		test++;
+		debugPrintServoScan(); 
+		// test++;
 	}
 	else if (test == 4) {
 		// debugPrintUltrasound();
 		test++;	
 	}
 	else if (test == 5) {
-		while (!inDock()) {
+		//debugPrintDirection(getLineDirection());
+		test++;
+	}
+	else if (test == 6) {
+		while (!inDock(STRAIGHT)) {
 			navigate();
 		}	
 		test++;
@@ -160,7 +168,7 @@ void distanceNavigation(int angle) {
 // Navigation for docking 
 void dockingNavigation(Direction dir) {
 	while (!inDock(dir)) {
-		shortWalk(dir, 20);
+		shortWalk(dir, 5);
 		dir = getLineDirection();
 	}
 }
@@ -199,13 +207,13 @@ Direction getLineDirection() {
 	bool rightData = readRightLineSensor();
 
 	if (!leftData && !rightData)
-		return STRAIGHT; // When no line found
+		return UNKNOWN; // When no line found
 	else if (leftData && !rightData)
 		return RIGHT; 	// When line detected on left sensor
 	else if (!leftData && rightData)
 		return LEFT;		// When line detected on right sensor
 	else
-		return UNKNOWN;	// When line found
+		return STRAIGHT;	// When line found
 }
 // Reads data from left line sensor, returns true if on a line
 bool readLeftLineSensor() {
@@ -220,8 +228,10 @@ bool readRightLineSensor() {
 /*~~~~~~~~~~ Servo Functions ~~~~~~~~~~*/
 // Debug Servo
 void debugPrintServoScan() {
-	Serial.print("Angle: ");
+	Serial.print("Angle (Original Method): ");
 	Serial.println(servoScan());
+	Serial.print("Angle (Average Method): ");
+	Serial.println(averageServoScan());
 }
 
 // Scans 0-180 degrees in front of the robot, returns angle for which there is an signal
@@ -319,7 +329,7 @@ int averageServoScan() {
 
 	// Returns -1 if difference between the result from first & second sweep are
 	// larger than 5 degrees. Else returns the angle at which a signal was found.
-	if ((secondSweepAverage-firstSweepAverage) > 5)
+	if ((secondSweepAverage-firstSweepAverage) > 5) // ADD CONDITION
 		return -1;
 	else
 		return ((firstSweepAverage + secondSweepAverage)/2)/servoResolution;
@@ -327,7 +337,6 @@ int averageServoScan() {
 
 // Turns servo to the given angle
 void servoTurn(double angle) {
-	delay(100);
 	servo.write(angle);
 }
 
@@ -337,13 +346,8 @@ bool readSensor() {
 
 	// Reads sensor data sensorRead times
 	for (int i = 0; i < sensorRead; i++) {
-		int majs = analogRead(sensorPin);
-		Serial.println(majs);
-		reading += majs;	
-		delay(800);
-		// reading += analogRead(sensorPin);	// Data from IR is HIGH when no signal
+		reading += analogRead(sensorPin);	// Data from IR is HIGH when no signal
 	}
-
 	// If reading is less than sensorReadThreshold return true
 	if (reading < sensorReadThreshold)
 		return true;
@@ -447,7 +451,7 @@ void longWalk(Direction dir, int length) {
 
 // Short walk without acceleration and deacceleration
 void shortWalk(Direction dir, int steps) {
-	globalMotorDelay = motorDelayUpperBound;
+	globalMotorDelay = motorDelayLowerBound;
 	direction(dir);
 	runMotor(steps);
 }
