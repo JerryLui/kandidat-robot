@@ -40,8 +40,8 @@ const int accelerationLength = (motorDelayUpperBound-motorDelayLowerBound)/delay
 unsigned int globalMotorDelay = motorDelayLowerBound;
 
 // Ultrasound Constants
-const int trigPin = 12;					// Respective pins for ultrasound
-const int echoPin = 13;
+const int trigPin = 11;					// Respective pins for ultrasound
+const int echoPin = 10;
 
 const int maxDistance = 100;		// Maximum distance in cm
 const int minDistance = 10;
@@ -93,12 +93,18 @@ void loop() {
 		test++;
 	}
 	else if (test == 3) {
-		debugPrintServoScan(); 
-		// test++;
+		// debugPrintServoScan(); 
+		test++;
 	}
 	else if (test == 4) {
 		// debugPrintUltrasound();
 		test++;	
+	}
+	else if (test == 5) {
+		while (!inDock()) {
+			navigate();
+		}	
+		test++;
 	}
 }
 
@@ -144,8 +150,10 @@ void distanceNavigation(int angle) {
 		else if (distance > 20) {
 			longWalk(STRAIGHT, 0.95*distance);
 		} else {
-			shortWalk(STRAIGHT, 20);
+			longWalk(STRAIGHT, 10);
 		}
+		// Checks if ther's any docking-markings
+		lineDirection = getLineDirection();
 	}
 }
 
@@ -159,12 +167,8 @@ void dockingNavigation(Direction dir) {
 
 // Checks if in dock
 bool inDock(Direction dir) {
-	if (dir == UNKNOWN) 
-		return true;
-	else
-		return false;
+	return dir == UNKNOWN;
 }
-
 
 /*~~~~~~~~~~ Line Sensor Functions ~~~~~~~~~~*/
 // Line Sensor Test Function
