@@ -16,7 +16,7 @@ const int sensorPin = A3;
 
 const int spanSizeThreshold = 3;
 const int sensorRead = 20;				// Times to read the sensor data
-const int sensorReadThreshold = analogMax*sensorRead*0.8;	// Upperbound for ir 0.64
+const int sensorReadThreshold = analogMax*sensorRead*0.64;	// Upperbound for ir 0.64
 
 // Directions
 enum Direction {
@@ -37,8 +37,8 @@ void loop() {
 /*~~~~~~~~~~ Servo Functions ~~~~~~~~~~*/
 // Debug Servo
 void debugPrintServoScan() {
-	Serial.print("Angle (Original Method): ");
-	Serial.println(servoScan());
+	// Serial.print("Angle (Original Method): ");
+	// Serial.println(servoScan());
 	Serial.print("Angle (Average Method): ");
 	Serial.println(averageServoScan());
 }
@@ -81,6 +81,10 @@ int servoScan() {
 			spanSize = 0;
 		}
 	}
+	Serial.print("maxSpanSize: ");
+	Serial.println(maxSpanSize);
+	Serial.print("spanEnd: ");
+	Serial.println(spanEnd);
 
 	// Returns the angle for which there's a signal, returns -1 if nothing found
 	if (maxSpanSize < spanSizeThreshold) {
@@ -92,56 +96,83 @@ int servoScan() {
 
 // An alternative method using average of positive signals
 int averageServoScan() {
-	// Variables to hold the average
-	int total = 0; 
-	int elements = 0;
-	int spanSize = 0;
-
-	// Sweeps the servo from minAngle to maxAngle while collecting the reading
-	for (int i = minAngle; i<maxAngle; i++) {
-		servoTurn(i/servoResolution);
-		if (readSensor() && spanSize++ > 1) {
-			total += i;
-			elements++;
-		} else if (spanSize > 1) {
-			total -= i-1;
-			elements--;
-			spanSize = 0;
-		} else {
-			spanSize = 0;
-		}
-	}
-
 	// Stores the average of signal position
-	int firstSweepAverage = total/elements;
-
-	// Resets variables
-	total = 0; elements = 0; spanSize = 0;
-
-	// does another sweep backwards
-	for (int i = maxAngle; i>minAngle; i--) {
-		servoTurn(i/servoResolution);
-		if (readSensor() && spanSize++ > 1) {
-			total += i;
-			elements++;
-		} else if (spanSize > 1) {
-			total -= i-1;
-			elements--;
-			spanSize = 0;
-		} else {
-			spanSize = 0;
-		}
-	}
+	int firstSweepAverage = averageSweep(minAngle, maxAngle);
+	Serial.println(firstSweepAverage);
 
 	// Stores the average pos from second sweep
-	int secondSweepAverage = total/elements;
+	int secondSweepAverage = averageSweep(maxAngle, minAngle);
+	Serial.println(secondSweepAverage);
 
 	// Returns -1 if difference between the result from first & second sweep are
 	// larger than 5 degrees. Else returns the angle at which a signal was found.
-	if ((secondSweepAverage-firstSweepAverage) > 5) // ADD CONDITION
+	if (abs(secondSweepAverage-firstSweepAverage) > 5*servoResolution)
 		return -1;
 	else
 		return ((firstSweepAverage + secondSweepAverage)/2)/servoResolution;
+}
+
+// Stupid ethod to chose between incremental & decremental search
+int averageSweep(int startAngle, int endAngle) {
+	if (startAngle < endAngle) 
+		return averageIncrementalSweep(startAngle, endAngle);
+	else
+		return averageDecrementalSweep(startAngle, endAngle);
+}
+
+// Average incremental sweep
+int averageIncrementalSweep(int startAngle, int endAngle) {
+	int spanSize = 0;
+	int total = 0;
+	int elements = 0;
+
+	// Method only saves elements with a spansize > 2
+	while (startAngle < endAngle) {
+		servoTurn(startAngle/servoResolution);
+		// If a positive signal is recieved
+		if (readSensor()) {
+			spanSize++;	// Increase the current span
+			if (spanSize > 1) {		// If current spanSize > 1
+				total += startAngle;	// Add current angle to total
+				elements++;						// Increment nmbr of elements
+			}
+		} else { 	// I no signals are detected
+			if (spanSize > 1) {
+				total -= startAngle-1;
+				elements--;
+			}
+			spanSize = 0;
+		}
+		startAngle++;
+	}
+	return total/elements; 
+}
+
+// Average decremental sweep
+int averageDecrementalSweep(int startAngle, int endAngle) {
+	int spanSize = 0;
+	int total = 0;
+	int elements = 0;
+
+	while (startAngle > endAngle) {
+		servoTurn(startAngle/servoResolution);
+		// If a positive signal is recieved
+		if (readSensor()) {
+			spanSize++;	// Increase the current span
+			if (spanSize > 1) {		// If current spanSize > 1
+				total += startAngle;	// Add current angle to total
+				elements++;						// Increment nmbr of elements
+			}
+		} else { 	// I no signals are detected
+			if (spanSize > 1) {
+				total -= startAngle+1;
+				elements--;
+			}
+			spanSize = 0;
+		}
+		startAngle--;
+	}
+	return total/elements; 
 }
 
 // Turns servo to the given angle
@@ -157,11 +188,14 @@ bool readSensor() {
 	for (int i = 0; i < sensorRead; i++) {
 		reading += analogRead(sensorPin);	// Data from IR is HIGH when no signal
 	}
+
 	// If reading is less than sensorReadThreshold return true
-	if (reading < sensorReadThreshold)
+	if (reading < sensorReadThreshold) {
 		return true;
-	else
+	}
+	else {
 		return false;
+	}	
 }
 
 
