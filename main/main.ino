@@ -266,88 +266,90 @@ bool readRightLineSensor() {
 }
 
 /*~~~~~~~~~~ Servo Functions ~~~~~~~~~~*/
-
-
-// Scans 0-180 degrees in front of the robot, returns angle for which there is an signal
+// Scans 0-180 degrees in front of the robot, returns angle for which there is a signal
 int servoScan() {
-	bool clockwiseReadings [maxAngle-minAngle];
-	bool counterClockwiseReadings [maxAngle-minAngle];
-
-	// Sweeps the servo from minAngle to maxAngle while collecting the reading
-	for (int i = minAngle; i<maxAngle; i++) {
-		servoTurn(i/servoResolution);
-		clockwiseReadings[i] = readSensor();
-	}
-	// does another sweep backwards
-	for (int i = maxAngle; i>minAngle; i--) {
-		servoTurn(i/servoResolution);
-		counterClockwiseReadings[i] = readSensor();
-	}
-
-	int spanSize = 0;
-	int spanEnd = 0;
-	int maxSpanSize = 0;
-
-	// Compares the readings from the two sweeps and finds the largest span
-	for (int i = minAngle; i<maxAngle; i++) {
-		// Increases the spanSize for each run
-		if (clockwiseReadings[i]) {
-			spanSize++;
-		} else if (spanSize != 0) {
-			if (spanSize > maxSpanSize) {
-				maxSpanSize = spanSize;
-				spanEnd = i-1;
-			}
-			spanSize = 0;
-		}
-	}
-
-	spanSize = 0;
-	int secondSpanEnd = 0;
-	int secondMaxSpanSize = 0;
-	for (int i = minAngle; i<maxAngle; i++) {
-		// Increases the spanSize for each run
-		if (counterClockwiseReadings[i]) {
-			spanSize++;
-		} else if (spanSize != 0) {
-			if (spanSize > secondMaxSpanSize) {
-				secondMaxSpanSize = spanSize;
-				secondSpanEnd = i-1;
-			}
-			spanSize = 0;
-		}
-	}
-
-	// Returns the angle for which there's a signal, returns -1 if nothing found
-	if (maxSpanSize < spanSizeThreshold) {
+	// First sweep scan using max span size method
+	int clockwiseRead = sweepScan(minAngle, maxAngle);
+	if (clockwiseRead < 0)
 		return -1;
-	} else {
-		return (spanEnd-maxSpanSize/2)/servoResolution;
-	}
+
+	// Second sweep scan using max span size method
+	int counterClockwiseRead = sweepScan(minAngle, maxAngle);
+	if (counterClockwiseRead < 0) 
+		return -1;
+
+	// If difference between the two readings differ by more than 5 degrees
+	if (abs(clockwiseRead-counterClockwiseRead) > 5)
+		return -1;
+	else
+		return (clockwiseRead+counterClockwiseRead)/2;	// Return the average of two readings
+
 }
 
+// Performs a incremental- or decremental sweep depending on input angles
+int sweepScan(int startAngle, int endAngle) {
+	if (startAngle < endAngle)
+		incrementalSweepScan(startAngle, endAngle);
+	else
+		decrementalSweepScan(startAngle, endAngle);
+}
+
+// Incremental sweep method by finding the largest span
 int incrementalSweepScan(int startAngle, int endAngle) {
+	// Initiate variables
+	int maxSpanSize = 0;
 	int spanSize = 0;
 	int spanEnd = 0;
 
-	for (int i = startAngle; i < endAngle; i++) {
-		servoTurn(i/servoResolution);
-
+	while (startAngle < endAngle) {
+		// Turns reciever towoards the angle
+		servoTurn(startAngle/servoResolution);
+		
+		// If a signal is found
 		if (readSensor()) {
-			spanSize++;
-		} else if (spanSize != 0) {
-			if (maxSpanSize < spanSize) {
-				maxSpanSize = spanSize;
-				spanEnd = i-1;
+			spanSize++;					// Increase the span size
+		} else if (spanSize != 0) {			// Otherwise
+			if (maxSpanSize < spanSize) {	// If current span is largest
+				maxSpanSize = spanSize;			// Save it as largest
+				spanEnd = startAngle-1;							// Save the last element of span
 			}
-			spanSize = 0;
+			spanSize = 0;				// Reset span size
 		}
+
+		startAngle++;
 	}
+
+	// Returns the center of the measured span if maxSpanSize is larger than spanSizeThresh
 	return (maxSpanSize > spanSizeThreshold) ? (spanEnd-maxSpanSize/2)/servoResolution : -1;
 }
 
+// Decremental sweep method by finding the largest span
 int decrementalSweepScan(int startAngle, int endAngle) {
-	for (int i = maxAng)
+	// Initiate variables
+	int maxSpanSize = 0;
+	int spanSize = 0;
+	int spanEnd = 0;
+
+	while (startAngle > endAngle) {
+		// Turns reciever towoards the angle
+		servoTurn(startAngle/servoResolution);
+		
+		// If a signal is found
+		if (readSensor()) {
+			spanSize++;					// Increase the span size
+		} else if (spanSize != 0) {			// Otherwise
+			if (maxSpanSize < spanSize) {	// If current span is largest
+				maxSpanSize = spanSize;			// Save it as largest
+				spanEnd = startAngle+1;							// Save the last element of span
+			}
+			spanSize = 0;				// Reset span size
+		}
+
+		startAngle--;
+	}
+
+	// Returns the center of the measured span if maxSpanSize is larger than spanSizeThresh
+	return (maxSpanSize > spanSizeThreshold) ? (spanEnd-maxSpanSize/2)/servoResolution : -1;
 }
 
 // An alternative method using average of positive signals
@@ -431,9 +433,15 @@ int averageDecrementalSweep(int startAngle, int endAngle) {
 	return total/elements;
 }
 
+double currentServoAngle;
+
 // Turns servo to the given angle
 void servoTurn(double angle) {
 	servo.write(angle);
+	if (abs(angle-currentServoAngle) > 90) {
+		delay(600);
+	}
+	currentServoAngle = angle;
 }
 
 // Reads sensor data
