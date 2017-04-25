@@ -50,8 +50,8 @@ const int minDistance = 10;
 // Line Sensor Constants
 #define lineThreshold 30
 
-const int lineLeftPin = A5;
-const int lineRightPin = A4;
+const int lineLeftPin = A8;
+const int lineRightPin = A9;
 
 // Directions
 enum Direction {
