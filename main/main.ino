@@ -58,6 +58,13 @@ enum Direction {
 	LEFT, RIGHT, STRAIGHT, BACK, UNKNOWN
 };
 
+// State
+enum State {
+	NAVIGATION, DOCKING, STANDBY
+};
+
+State state = NAVIGATION; 
+
 // Setup
 void setup() {
 	// Initiate Serial Contact (for debug purposes)
@@ -85,9 +92,9 @@ void setup() {
 int test = 1;
 // Main Loop
 void loop() {
-	if (test == 1) {
+	while(state != STANDBY) {
+		Serial.println(state);
 		navigate();
-		// test++;
 	}
 }
 
@@ -95,23 +102,27 @@ void loop() {
 void navigate() {
 	// Robo Logic
 	// Scan for signal in 180 degrees in front of robot
-	int angle = servoScan();
-	Serial.println(angle);
-	// Check if signal out of bounds
-	if (angle < 0 || angle > 180)
-		turnAround();
-	else if (angle > 95)
-		turn(LEFT, abs(90-angle));	// Rotate robot by given angular difference
-	else if (angle < 85)
-		turn(RIGHT, abs(90-angle)); // Rotate robot by given anlgular difference
-	else {												// Else, signal is straight ahead
-		if (getLineDirection() == STRAIGHT) {	// While no line detected
-			distanceNavigation(angle);
-		} else {
-			dockingNavigation(getLineDirection());
+	if (state == NAVIGATION) {
+		int angle = servoScan();
+		Serial.println(angle);
+		// Check if signal out of bounds
+		if (angle < 0 || angle > 180)
+			turnAround();
+		else if (angle > 95)
+			turn(LEFT, abs(90-angle));	// Rotate robot by given angular difference
+		else if (angle < 85)
+			turn(RIGHT, abs(90-angle)); // Rotate robot by given anlgular difference
+		else {												// Else, signal is straight ahead
+			if (getLineDirection() == STRAIGHT) {	// While no line detected
+				distanceNavigation(angle);
+			} else {
+				state = DOCKING;
+			}
 		}
 	}
-	delay(1000);
+	else if (state == DOCKING) {
+		dockingNavigation(getLineDirection());
+	}
 }
 
 // Navigation for long distance
@@ -129,13 +140,13 @@ void distanceNavigation(int angle) {
 		distance = getDistance();
 		// If distance longer than 1m: walk towoards signal with small steps
 		if (distance > 100 || distance < 10) {
-			longWalk(STRAIGHT, 12);
+			longWalk(STRAIGHT, 6);
 		}
 		// If distance longer than ultrasound lower bound walk all the way towoards it
-		else if (distance > 20) {
-			longWalk(STRAIGHT, 0.6*distance);
+		else if (distance > 30) {
+			longWalk(STRAIGHT, 0.65*distance);
 		} else {
-			longWalk(STRAIGHT, 12);
+			longWalk(STRAIGHT, 6);
 		}
 		// Checks if ther's any docking-markings
 		lineDirection = getLineDirection();
@@ -307,7 +318,7 @@ int incrementalSweepScan(int startAngle, int endAngle) {
 	while (startAngle < endAngle) {
 		// Turns reciever towoards the angle
 		servoTurn(startAngle/servoResolution);
-		
+
 		// If a signal is found
 		if (readSensor()) {
 			spanSize++;					// Increase the span size
@@ -336,7 +347,7 @@ int decrementalSweepScan(int startAngle, int endAngle) {
 	while (startAngle > endAngle) {
 		// Turns reciever towoards the angle
 		servoTurn(startAngle/servoResolution);
-		
+
 		// If a signal is found
 		if (readSensor()) {
 			spanSize++;					// Increase the span size
@@ -505,7 +516,8 @@ void longWalk(Direction dir, int length) {
 	} else {
 		accelerate(accelerationLength);
 		runMotor(steps-2*accelerationLength);
-		deaccelerate(accelerationLength);
+		if (state == NAVIGATION)
+			deaccelerate(accelerationLength);
 	}
 }
 
@@ -538,7 +550,12 @@ void turn(Direction dir, double angle) {
 // Runs motor for given amount of steps
 void runMotor(int steps) {
 	for (int i = 0; i < steps; i++) {
-		step(globalMotorDelay);
+		if (getLineDirection() == STRAIGHT) {
+			step(globalMotorDelay);
+		} else {
+			state = DOCKING;
+			break;
+		}
 	}
 }
 
