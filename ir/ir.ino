@@ -1,4 +1,7 @@
+#include <Event.h>
+#include <Timer.h>
 #include <Servo.h>
+#include <SoftwareSerial.h>
 
 #define analogMax 1023
 #define pi 3.1416
@@ -12,7 +15,9 @@ const int minAngle = 0;
 const int maxAngle = 180*servoResolution;
 
 // IR-sensor Constants
-const int sensorPin = A3;
+//const int sensorPin = A3;
+SoftwareSerial mySerial(A3,10);
+SoftwareSerial myFake(A1,A2);
 
 const int spanSizeThreshold = 3;
 const int sensorRead = 20;				// Times to read the sensor data
@@ -26,8 +31,11 @@ enum Direction {
 void setup() {
 	Serial.begin(9600);
 	// Servo Setup
-	pinMode(sensorPin, INPUT_PULLUP);
+	//pinMode(sensorPin, INPUT_PULLUP);
+  mySerial.begin(2400);
+  myFake.begin(2400);
 	servo.attach(servoPin);
+  myFake.listen();
 }
 
 void loop() {
@@ -184,8 +192,20 @@ void servoTurn(double angle) {
 bool readSensor() {
 	int reading = 0;
 
+  double lastT = micros();
+  
+  while(!mySerial.isListening()||!mySerial.available()&&micros()-lastT<9000) mySerial.listen();
+
+  if(micros()-lastT<9000){ //mySerial.available()&&
+    reading = mySerial.read();
+  }
+
+  while(!myFake.isListening()) myFake.listen();
+
+  return reading;
+  
 	// Reads sensor data sensorRead times
-	for (int i = 0; i < sensorRead; i++) {
+	/*for (int i = 0; i < sensorRead; i++) {
 		reading += analogRead(sensorPin);	// Data from IR is HIGH when no signal
 	}
 
@@ -195,7 +215,7 @@ bool readSensor() {
 	}
 	else {
 		return false;
-	}	
+	}	*/
 }
 
 
