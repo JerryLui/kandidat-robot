@@ -8,7 +8,6 @@
 Servo servo;
 #define servoPin 13
 
-const int servoThreshold  = 80;
 const int servoResolution = 2;		// Number of steps per servo degree
 const int minAngle = 0;
 const int maxAngle = 180*servoResolution;
@@ -87,7 +86,7 @@ int test = 1;
 // Main Loop
 void loop() {
 	if (test == 1) {
-		debugPrintServoScan();
+		navigate();
 		// test++;
 	}
 }
@@ -97,7 +96,7 @@ void navigate() {
 	// Robo Logic
 	// Scan for signal in 180 degrees in front of robot
 	int angle = servoScan();
-
+	Serial.println(angle);
 	// Check if signal out of bounds
 	if (angle < 0 || angle > 180)
 		turnAround();
@@ -112,15 +111,17 @@ void navigate() {
 			dockingNavigation(getLineDirection());
 		}
 	}
+	delay(1000);
 }
 
 // Navigation for long distance
 void distanceNavigation(int angle) {
-	int distance;
+	double distance;
 	Direction lineDirection = getLineDirection();
 
 	// Turns IR-sensor towoards signal
 	servoTurn(angle);
+	Serial.println("Servo Turned");
 
 	// While there's a signal and no lines are detected
 	while (lineDirection == STRAIGHT && readSensor()) {
@@ -132,9 +133,9 @@ void distanceNavigation(int angle) {
 		}
 		// If distance longer than ultrasound lower bound walk all the way towoards it
 		else if (distance > 20) {
-			longWalk(STRAIGHT, 0.95*distance);
+			longWalk(STRAIGHT, 0.6*distance);
 		} else {
-			longWalk(STRAIGHT, 10);
+			longWalk(STRAIGHT, 12);
 		}
 		// Checks if ther's any docking-markings
 		lineDirection = getLineDirection();
@@ -270,16 +271,18 @@ bool readRightLineSensor() {
 int servoScan() {
 	// First sweep scan using max span size method
 	int clockwiseRead = sweepScan(minAngle, maxAngle);
+	// Serial.println(clockwiseRead);
 	if (clockwiseRead < 0)
 		return -1;
 
 	// Second sweep scan using max span size method
-	int counterClockwiseRead = sweepScan(minAngle, maxAngle);
+	int counterClockwiseRead = sweepScan(maxAngle, minAngle);
+	// Serial.println(counterClockwiseRead);
 	if (counterClockwiseRead < 0) 
 		return -1;
 
-	// If difference between the two readings differ by more than 5 degrees
-	if (abs(clockwiseRead-counterClockwiseRead) > 5)
+	// If difference between the two readings differ by more than 12 degrees
+	if (abs(clockwiseRead-counterClockwiseRead) > 12)
 		return -1;
 	else
 		return (clockwiseRead+counterClockwiseRead)/2;	// Return the average of two readings
@@ -289,9 +292,9 @@ int servoScan() {
 // Performs a incremental- or decremental sweep depending on input angles
 int sweepScan(int startAngle, int endAngle) {
 	if (startAngle < endAngle)
-		incrementalSweepScan(startAngle, endAngle);
+		return incrementalSweepScan(startAngle, endAngle);
 	else
-		decrementalSweepScan(startAngle, endAngle);
+		return decrementalSweepScan(startAngle, endAngle);
 }
 
 // Incremental sweep method by finding the largest span
@@ -349,7 +352,7 @@ int decrementalSweepScan(int startAngle, int endAngle) {
 	}
 
 	// Returns the center of the measured span if maxSpanSize is larger than spanSizeThresh
-	return (maxSpanSize > spanSizeThreshold) ? (spanEnd-maxSpanSize/2)/servoResolution : -1;
+	return (maxSpanSize > spanSizeThreshold) ? (spanEnd+maxSpanSize/2)/servoResolution : -1;
 }
 
 // An alternative method using average of positive signals
@@ -360,7 +363,6 @@ int averageServoScan() {
 
 	// Stores the average pos from second sweep
 	int secondSweepAverage = averageSweep(maxAngle, minAngle);
-	Serial.println(secondSweepAverage);
 
 	// Returns -1 if difference between the result from first & second sweep are
 	// larger than 5 degrees. Else returns the angle at which a signal was found.
@@ -433,13 +435,15 @@ int averageDecrementalSweep(int startAngle, int endAngle) {
 	return total/elements;
 }
 
+// Help variable for large turns
 double currentServoAngle;
 
 // Turns servo to the given angle
 void servoTurn(double angle) {
 	servo.write(angle);
-	if (abs(angle-currentServoAngle) > 90) {
-		delay(600);
+	// Adds an delay for large turns to complete before another task
+	if (abs(angle-currentServoAngle) > 30) {
+		delay((abs(angle-currentServoAngle)/180)*800);
 	}
 	currentServoAngle = angle;
 }
@@ -461,7 +465,7 @@ bool readSensor() {
 
 /*~~~~~~~~~~ Ultrasound Functions ~~~~~~~~~~*/
 // Gets the distance to object in front of robot
-int getDistance() {
+double getDistance() {
 	sendEcho();
 	return recieveEcho();
 }
@@ -477,7 +481,7 @@ void sendEcho() {
 
 // Recieves an ultrasound pulse and returns the distance
 int recieveEcho() {
-	int distance = pulseIn(echoPin, HIGH)/29/2;
+	double distance = pulseIn(echoPin, HIGH)/29/2;
 
 	pulseIn(echoPin, LOW);
 	if (distance < maxDistance && distance > minDistance) {
