@@ -2,6 +2,7 @@
 #include <Timer.h>
 #include <Servo.h>
 #include <SoftwareSerial.h>
+#include <Wire.h>
 
 #define analogMax 1023
 #define pi 3.1416
@@ -16,12 +17,14 @@ const int maxAngle = 180*servoResolution;
 
 // IR-sensor Constants
 //const int sensorPin = A3;
-SoftwareSerial mySerial(A3,10);
-SoftwareSerial myFake(A1,A2);
+//SoftwareSerial mySerial(A3,10);
+//SoftwareSerial myFake(A1,A2);
 
 const int spanSizeThreshold = 3;
 const int sensorRead = 20;				// Times to read the sensor data
 const int sensorReadThreshold = analogMax*sensorRead*0.64;	// Upperbound for ir 0.64
+
+bool sensor = false;
 
 // Directions
 enum Direction {
@@ -32,10 +35,12 @@ void setup() {
 	Serial.begin(9600);
 	// Servo Setup
 	//pinMode(sensorPin, INPUT_PULLUP);
-  mySerial.begin(2400);
-  myFake.begin(2400);
+  //mySerial.begin(2400);
+  //myFake.begin(2400);
 	servo.attach(servoPin);
-  myFake.listen();
+  //myFake.listen();
+  Wire.begin(1);
+  Wire.onReceive(recieveEvent);
 }
 
 void loop() {
@@ -190,20 +195,12 @@ void servoTurn(double angle) {
 
 // Reads sensor data
 bool readSensor() {
-	int reading = 0;
-
-  double lastT = micros();
-  
-  while(!mySerial.isListening()||!mySerial.available()&&micros()-lastT<9000) mySerial.listen();
-
-  if(micros()-lastT<9000){ //mySerial.available()&&
-    reading = mySerial.read();
-  }
-
-  while(!myFake.isListening()) myFake.listen();
-
-  return reading;
-  
+  sensor = false;
+	Wire.beginTransmission(2);
+  Wire.write('U');
+  Wire.endTransmission(2);
+  delayMicroseconds(10000);
+  return sensor;
 	// Reads sensor data sensorRead times
 	/*for (int i = 0; i < sensorRead; i++) {
 		reading += analogRead(sensorPin);	// Data from IR is HIGH when no signal
@@ -217,5 +214,7 @@ bool readSensor() {
 		return false;
 	}	*/
 }
-
+void recieveEvent(int howMany){
+  sensor = Wire.read();
+}
 
