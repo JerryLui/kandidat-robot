@@ -1,27 +1,25 @@
 #include <Event.h>
 #include <Timer.h>
-#include <Servo.h>
+//#include <Servo.h>
 #include <SoftwareSerial.h>
 #include <Wire.h>
 
 #define analogMax 1023
 #define pi 3.1416
-// Servo Constants
+/* Servo Constants
 Servo servo;
 #define servoPin 13
-
+*/
 const int servoThreshold  = 80;
 const int servoResolution = 2;		// Number of steps per servo degree
 const int minAngle = 0;
 const int maxAngle = 180 * servoResolution;
 
 // IR-sensor Constants
-//const int sensorPin = A3;
-SoftwareSerial mySerial(A3, 10);
-SoftwareSerial myFake(A1, A2);
+const int sensorPin = A3;
 
-//SoftwareSerial mySerial(A3,10);
-//SoftwareSerial myFake(A1,A2);
+SoftwareSerial mySerial(A3,32);
+SoftwareSerial myFake(30,31);
 
 const int spanSizeThreshold = 3;
 const int sensorRead = 20;				// Times to read the sensor data
@@ -37,17 +35,20 @@ enum Direction {
 void setup() {
 	Serial.begin(9600);
 	// Servo Setup
-	//pinMode(sensorPin, INPUT_PULLUP);
-  //mySerial.begin(2400);
-  //myFake.begin(2400);
-	servo.attach(servoPin);
-  //myFake.listen();
-  Wire.begin(1);
-  Wire.onReceive(recieveEvent);
+	pinMode(sensorPin, INPUT_PULLUP);
+  mySerial.begin(2400);
+  myFake.begin(2400);
+	//servo.attach(servoPin);
+  myFake.listen();
+  Wire.begin();
 }
 
 void loop() {
-	Serial.println(servoScan());
+  for( int i = 0; i < 180; i++){
+    servoTurn(i);
+    delay(5);
+  }
+	//Serial.println(servoScan());
 }
 
 /*~~~~~~~~~~ Servo Functions ~~~~~~~~~~*/
@@ -223,23 +224,30 @@ int averageDecrementalSweep(int startAngle, int endAngle) {
 double currentServoAngle;
 
 // Turns servo to the given angle
-void servoTurn(double angle) {
-	servo.write(angle);
+void servoTurn(int angle) { /////////////////////////////////////////////floooat
+  Serial.println("1");
+  Wire.beginTransmission(2);
+  Serial.println("2");
+  Wire.write((int)angle);
+  Serial.println("3");
+  Wire.endTransmission();
+  Serial.println("4");
+	//servo.write(angle);
 	// Adds an delay for large turns to complete before another task
-	if (abs(angle-currentServoAngle) > 30) {
+	/*if (abs(angle-currentServoAngle) > 30) {
 		delay((abs(angle-currentServoAngle)/180)*800);
-	}
+	}*/
 	currentServoAngle = angle;
 }
 
 // Reads sensor data
 bool readSensor() {
-  /*int reading = 0;
+  int reading = 0;
 
   double lastT = micros();
-*/
-  /*while (!mySerial.isListening() || !mySerial.available() && micros() - lastT < 9000) mySerial.listen();
-
+  
+  while (!mySerial.isListening() || !mySerial.available() && micros() - lastT < 9000) mySerial.listen();
+  
   if (micros() - lastT < 9000) { //mySerial.available()&&
     reading = mySerial.read();
   }
@@ -247,7 +255,7 @@ bool readSensor() {
   while (!myFake.isListening()) myFake.listen();
 
   return reading > 0;
-*/
+
   // Reads sensor data sensorRead times
   /*for (int i = 0; i < sensorRead; i++) {
   	reading += analogRead(sensorPin);	// Data from IR is HIGH when no signal
@@ -259,13 +267,18 @@ bool readSensor() {
     }
     else {
   	return false;
-    }	*/
+    }	
   sensor = false;
+  Serial.println("1");
 	Wire.beginTransmission(2);
+  Serial.println("2");
   Wire.write('U');
-  Wire.endTransmission(2);
+  Serial.println("3");
+  Wire.endTransmission();
+  Serial.println("4");
   delayMicroseconds(10000);
-  return sensor;
+  Serial.println("5");
+  return sensor;*/
 	// Reads sensor data sensorRead times
 	/*for (int i = 0; i < sensorRead; i++) {
 		reading += analogRead(sensorPin);	// Data from IR is HIGH when no signal
@@ -279,7 +292,3 @@ bool readSensor() {
 		return false;
 	}	*/
 }
-void recieveEvent(int howMany){
-  sensor = Wire.read();
-}
-
