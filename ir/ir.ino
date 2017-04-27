@@ -10,6 +10,8 @@
 Servo servo;
 #define servoPin 13
 */
+#define servoBoardAddress 2
+
 const int servoThreshold  = 80;
 const int servoResolution = 2;		// Number of steps per servo degree
 const int minAngle = 0;
@@ -224,19 +226,16 @@ int averageDecrementalSweep(int startAngle, int endAngle) {
 double currentServoAngle;
 
 // Turns servo to the given angle
-void servoTurn(int angle) { /////////////////////////////////////////////floooat
-  Serial.println("1");
-  Wire.beginTransmission(2);
-  Serial.println("2");
-  Wire.write((int)angle);
-  Serial.println("3");
+void servoTurn(double angle) { /////////////////////////////////////////////floooat
+	int bigAngle = angle*10;
+  Wire.beginTransmission(servoBoardAddress);
+  Wire.write(bigAngle);
   Wire.endTransmission();
-  Serial.println("4");
-	//servo.write(angle);
+
 	// Adds an delay for large turns to complete before another task
-	/*if (abs(angle-currentServoAngle) > 30) {
+	if (abs(angle-currentServoAngle) > 30) {
 		delay((abs(angle-currentServoAngle)/180)*800);
-	}*/
+	}
 	currentServoAngle = angle;
 }
 
