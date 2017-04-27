@@ -1,16 +1,20 @@
-#include <Servo.h>
+#include <Event.h>
+#include <Timer.h>
+#include <SoftwareSerial.h>
+#include <Wire.h>
 
 // Global Constants
 # define analogMax 1023
 # define pi 3.1416
 
 // Servo Constants
-Servo servo;
 #define servoPin 13
+#define servoBoardAddress 2
 
-const int servoResolution = 2;		// Number of steps per servo degree
+const int servoResolution = 1;		// Number of steps per servo degree
 const int minAngle = 0;
 const int maxAngle = 180*servoResolution;
+
 
 // IR-sensor Constants
 const int sensorPin = A3;
@@ -18,6 +22,9 @@ const int sensorPin = A3;
 const int spanSizeThreshold = 3;
 const int sensorRead = 30;				// Times to read the sensor data
 const int sensorReadThreshold = analogMax*sensorRead*0.64;	// Upperbound for ir 0.64
+
+SoftwareSerial mySerial(sensorPin,32);
+SoftwareSerial myFake(30,31);
 
 // Direction Variables
 #define lDirection 4
@@ -50,8 +57,8 @@ const int minDistance = 10;
 // Line Sensor Constants
 #define lineThreshold 30
 
-const int lineLeftPin = A8;
-const int lineRightPin = A9;
+const int lineLeftPin = 8;
+const int lineRightPin = 9;
 
 // Directions
 enum Direction {
@@ -63,7 +70,7 @@ enum State {
 	NAVIGATION, DOCKING, STANDBY
 };
 
-State state = NAVIGATION; 
+State state; 
 
 // Setup
 void setup() {
@@ -78,7 +85,11 @@ void setup() {
 
 	// Servo Setup
 	pinMode(sensorPin, INPUT_PULLUP);
-	servo.attach(servoPin);
+	mySerial.begin(2400);
+	myFake.begin(2400);
+	
+	myFake.listen();
+	Wire.begin();
 
 	// Ultrasound Setup
 	pinMode(trigPin, OUTPUT);
@@ -87,15 +98,25 @@ void setup() {
 	// Line Sensor Setup
 	pinMode(lineLeftPin, INPUT);
 	pinMode(lineRightPin, INPUT);
+
+	// Sets Global Variables
+	state = NAVIGATION;
 }
 
 int test = 1;
 // Main Loop
 void loop() {
-	while(state != STANDBY) {
-		Serial.println(state);
-		navigate();
+	if (test == 1) {
+		debugRobotNavigation();
+		test++;
 	}
+	else if (test == 2) {
+		debugPrintServoScan();
+		test++;
+	}
+	// while(state != STANDBY) {
+		// navigate();
+	// }
 }
 
 /*~~~~~~~~~~ Robot Logic ~~~~~~~~~~*/
@@ -169,33 +190,43 @@ bool inDock(Direction dir) {
 /*~~~~~~~~~~ Debug Robot Functions ~~~~~~~~~~*/
 // Tests robot navigation functions
 void debugRobotNavigation() {
+	Serial.println("Testing Motor Functions: ");
 	debugMotorFunctions();
+	Serial.println("Testing Ultrasound Functions: ");
 	debugPrintUltrasound();
+	Serial.println("Testing Servo Functions: ");
 	debugPrintServoScan();
+	Serial.print("Testing Line Sensor: ");
+	Serial.println(debugDirectionToString(getLineDirection()));
 }
 
-// Line Sensor Test Function
-void debugPrintDirection(Direction dir) {
-	Serial.print("Direction: ");
+// Converts Direction to String
+String debugDirectionToString(Direction dir) {
 	switch (dir) {
 		case LEFT:
-			Serial.println("Left");
-			break;
+			return "Left";
 		case RIGHT:
-			Serial.println("Right");
-			break;
+			return "Right";
 		case STRAIGHT:
-			Serial.println("Straight");
-			break;
+			return "Straight";
 		case BACK:
-			Serial.println("Back");
-			break;
+			return "Back";
 		case UNKNOWN:
-			Serial.println("Unknown");
-			break;
+			return "Unknown";
 	}
 }
 
+// Converts State to String
+String debugStateToString(State inputState) {
+	switch (inputState) {
+		case NAVIGATION:
+			return "Navigation";
+		case DOCKING:
+			return "Docking";
+		case STANDBY:
+			return "Standby";
+	}
+}
 // Debug Servo
 void debugPrintServoScan() {
 	Serial.print("Angle (Original Method): ");
@@ -449,18 +480,46 @@ int averageDecrementalSweep(int startAngle, int endAngle) {
 // Help variable for large turns
 double currentServoAngle;
 
-// Turns servo to the given angle
-void servoTurn(double angle) {
-	servo.write(angle);
+// OLD: Turns servo to the given angle
+void servoTurn(int angle) {
+	// Begin transmission to second board
+	Wire.beginTransmission(servoBoardAddress);
+	Wire.write(angle);	// Send angle
+	Wire.endTransmission();
+	// delay(3);
+
 	// Adds an delay for large turns to complete before another task
 	if (abs(angle-currentServoAngle) > 30) {
-		delay((abs(angle-currentServoAngle)/180)*800);
+		delay((abs(angle-currentServoAngle)/180.0)*800);
 	}
+	
+	// Re asigns currentServoAngle
 	currentServoAngle = angle;
 }
 
-// Reads sensor data
+// Reads sensor data from programmed signal
 bool readSensor() {
+	int reading = 0;
+	double lastT = micros();
+
+	while (!mySerial.isListening() || !mySerial.available() && micros() - lastT < 9000) mySerial.listen();
+
+	if (micros() - lastT < 9000) { 
+		reading = mySerial.read();
+	}
+
+	myFake.listen();
+
+	if (reading > 0) {
+		//readingData = reading;
+		return true;
+	}
+	else
+		return false;
+}
+
+// Reads sensor data from constant signal
+/*bool readSensor() {
 	int reading = 0;
 
 	// Reads sensor data sensorRead times
@@ -472,7 +531,7 @@ bool readSensor() {
 		return true;
 	else
 		return false;
-}
+}*/
 
 /*~~~~~~~~~~ Ultrasound Functions ~~~~~~~~~~*/
 // Gets the distance to object in front of robot

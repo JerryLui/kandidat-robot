@@ -2,8 +2,10 @@
 #include <Servo.h>
 
 // Global Constants
-double angle = 0;
 const int mainBoardAddress = 2;
+
+double currentAngle = 0;
+double angle = 0;
 
 // Servo Constants
 Servo servo;
@@ -11,21 +13,26 @@ Servo servo;
 #define servoPin 13
 
 void setup() {
-  Wire.begin(mainBoardAddress);
-  Wire.onReceive(recieveEvent);
-  // Serial.begin(9600);
-  servo.attach(servoPin);
-  // Serial.println("Slave started");
+	Wire.begin(mainBoardAddress);
+	Wire.onReceive(recieveEvent);
+
+	servo.attach(servoPin);
 }
 
 void loop() {
-  servo.write(angle);
-  // Serial.println(angle);
 }
 
 void recieveEvent(int event){
-  while(Wire.available()){
-     angle = Wire.read()/10;
-  }
+	// Read and store angle if Wire available
+	if (Wire.available()) {
+		servoTurn(Wire.read());
+	}
 }
 
+void servoTurn(double angle) {
+	// Check if input angle is different to currentAngle
+	if (abs(currentAngle-angle) > 0.1) {
+		servo.write(angle);
+		currentAngle = angle;
+	}
+}
