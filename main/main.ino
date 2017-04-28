@@ -57,8 +57,8 @@ const int minDistance = 10;
 // Line Sensor Constants
 #define lineThreshold 30
 
-const int lineLeftPin = 8;
-const int lineRightPin = 9;
+const int leftLinePin = A1;
+const int rightLinePin = A2;
 
 // Directions
 enum Direction {
@@ -127,8 +127,8 @@ void setup() {
 	pinMode(echoPin, INPUT);
 
 	// Line Sensor Setup
-	pinMode(lineLeftPin, INPUT);
-	pinMode(lineRightPin, INPUT);
+	pinMode(leftLinePin, INPUT);
+	pinMode(rightLinePin, INPUT);
 
 	// Sets Global Variables
 	state = NAVIGATION;
@@ -139,9 +139,12 @@ int test = 1;
 // Main Loop
 void loop() {
 	if (test == 1) {
-		debugPrintServoScan();
-		//debugPrintUltrasound();
+		//debugPrintServoScan();
+		while (state != STANDBY) {
+			dockingNavigation(getLineDirection());
+		}
 		//test++;
+		
 		//Serial.println(getDistance());
 	}
 }
@@ -290,7 +293,6 @@ void debugMotorFunctions() {
 Direction getLineDirection() {
 	bool leftData = readLeftLineSensor();
 	bool rightData = readRightLineSensor();
-
 	if (!leftData && !rightData)
 		return UNKNOWN; // When no line found
 	else if (leftData && !rightData)
@@ -302,12 +304,14 @@ Direction getLineDirection() {
 }
 // Reads data from left line sensor, returns true if on a line
 bool readLeftLineSensor() {
-	return analogRead(lineLeftPin) > lineThreshold;
+	Serial.println(analogRead(leftLinePin));	
+	return analogRead(leftLinePin) > lineThreshold;
 }
 
 // Reads data from right line sensor, returns true if on a line
 bool readRightLineSensor() {
-	return analogRead(lineRightPin) > lineThreshold;
+		Serial.println(analogRead(rightLinePin));
+		return analogRead(rightLinePin) > lineThreshold;
 }
 
 /*~~~~~~~~~~ Servo Functions ~~~~~~~~~~*/
@@ -522,23 +526,6 @@ bool readSensor() {
 	else
 		return false;
 }
-
-/*// Reads sensor data from constant signal
-	bool readSensor() {
-	int reading = 0;
-
-// Reads sensor data sensorRead times
-for (int i = 0; i < sensorRead; i++) {
-reading += analogRead(sensorPin);	// Data from IR is HIGH when no signal
-}
-
-delay(5);
-// If reading is less than sensorReadThreshold return true
-if (reading < sensorReadThreshold)
-return true;
-else
-return false;
-}*/
 
 /*~~~~~~~~~~ Ultrasound Functions ~~~~~~~~~~*/
 // Gets the distance to object in front of robot
