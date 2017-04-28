@@ -1,5 +1,5 @@
-#include <Event.h>
-#include <Timer.h>
+// #include <Event.h>
+// #include <Timer.h>
 #include <SoftwareSerial.h>
 #include <Wire.h>
 
@@ -55,7 +55,7 @@ const int maxDistance = 100;		// Maximum distance in cm
 const int minDistance = 10;
 
 // Line Sensor Constants
-#define lineThreshold	23 
+#define lineThreshold	23
 
 const int leftLinePin = A1;
 const int rightLinePin = A2;
@@ -70,7 +70,7 @@ enum State {
 	NAVIGATION, DOCKING, STANDBY
 };
 
-State state; 
+State state;
 
 // Converts Direction to String
 String directionToString(Direction dir) {
@@ -104,7 +104,7 @@ String stateToString(State inputState) {
 // Setup
 void setup() {
 	// Initiate Serial Contact (for debug purposes)
-	// Serial.begin(9600);
+	Serial.begin(9600);
 
 	// Motor Setup
 	pinMode(lOutput, OUTPUT);pinMode(lStep, OUTPUT);pinMode(lDirection, OUTPUT);
@@ -132,20 +132,16 @@ void setup() {
 
 	// Sets Global Variables
 	state = NAVIGATION;
-
 }
 
 int test = 1;
 // Main Loop
 void loop() {
 	if (test == 1) {
-		//debugPrintServoScan();
-		while (state != STANDBY) {
-			dockingNavigation(getLineDirection());
-		}
+		Serial.println("Navigate Initiate");
+		navigate();
+		Serial.println("Navigate Finished");
 		//test++;
-
-		//Serial.println(getDistance());
 	}
 }
 
@@ -183,7 +179,6 @@ void distanceNavigation(int angle) {
 
 	// Turns IR-sensor towoards signal
 	servoTurn(angle);
-	Serial.println("Servo Turned");
 
 	// While there's a signal and no lines are detected
 	while (lineDirection == STRAIGHT && readSensor()) {
@@ -214,7 +209,12 @@ void dockingNavigation(Direction dir) {
 
 // Checks if in dock
 bool inDock(Direction dir) {
-	return dir == UNKNOWN;
+	if (dir == UNKNOWN) {
+		state = STANDBY;
+		return true;
+	} else {
+		return false;
+	}
 }
 
 /*~~~~~~~~~~ Debug Robot Functions ~~~~~~~~~~*/
@@ -293,6 +293,7 @@ void debugMotorFunctions() {
 Direction getLineDirection() {
 	bool leftData = readLeftLineSensor();
 	bool rightData = readRightLineSensor();
+
 	if (!leftData && !rightData)
 		return STRAIGHT; // When no line found
 	else if (leftData && !rightData)
@@ -304,14 +305,14 @@ Direction getLineDirection() {
 }
 // Reads data from left line sensor, returns true if on a line
 bool readLeftLineSensor() {
-	// Serial.println(analogRead(leftLinePin));	
-	return analogRead(leftLinePin) > lineThreshold;
+	// Serial.println(analogRead(leftLinePin));
+	return analogRead(leftLinePin) < lineThreshold;
 }
 
 // Reads data from right line sensor, returns true if on a line
 bool readRightLineSensor() {
 	// Serial.println(analogRead(rightLinePin));
-	return analogRead(rightLinePin) > lineThreshold;
+	return analogRead(rightLinePin) < lineThreshold;
 }
 
 /*~~~~~~~~~~ Servo Functions ~~~~~~~~~~*/
@@ -326,7 +327,7 @@ int servoScan() {
 	// Second sweep scan using max span size method
 	int counterClockwiseRead = sweepScan(maxAngle, minAngle);
 	// Serial.println(counterClockwiseRead);
-	if (counterClockwiseRead < 0) 
+	if (counterClockwiseRead < 0)
 		return -1;
 
 	// If difference between the two readings differ by more than 12 degrees
@@ -510,7 +511,7 @@ bool readSensor() {
 
 	while (!mySerial.isListening() || !mySerial.available() && micros() - lastT < 9000) mySerial.listen();
 
-	if (micros() - lastT < 9000) { 
+	if (micros() - lastT < 9000) {
 		reading = mySerial.read();
 	}
 
