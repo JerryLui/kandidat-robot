@@ -1,4 +1,3 @@
-#include <SoftwareSerial.h>
 #include <Wire.h>
 
 // Global Constants
@@ -141,7 +140,7 @@ void navigate() {
 	// Robo Logic
 	// Scan for signal in 180 degrees in front of robot
 	if (state == NAVIGATION) {
-		int angle = 90;// servoScan();
+		int angle = 90;// servoScan();	// TODO: FIX
 		// Serial.println(angle);
 		// Check if signal out of bounds
 		if (angle < 0 || angle > 180)
@@ -172,7 +171,7 @@ void distanceNavigation(int angle) {
 	servoTurn(angle);
 
 	// While there's a signal and no lines are detected
-	while (lineDirection == STRAIGHT) {// && readSensor()) {
+	while (lineDirection == STRAIGHT) {// && readSensor()) { TODO: FIX
 		// Retrieve distance from ultrasound sensor
 		distance = getDistance();
 		// If distance longer than 1m: walk towoards signal with small steps
