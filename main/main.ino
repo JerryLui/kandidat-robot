@@ -1,5 +1,3 @@
-// #include <Event.h>
-// #include <Timer.h>
 #include <SoftwareSerial.h>
 #include <Wire.h>
 
@@ -22,9 +20,6 @@ const int sensorPin = A3;
 const int spanSizeThreshold = 3;
 const int sensorRead = 30;				// Times to read the sensor data
 const int sensorReadThreshold = analogMax*sensorRead*0.64;	// Upperbound for ir 0.64
-
-SoftwareSerial mySerial(sensorPin,32);
-SoftwareSerial myFake(30,31);
 
 // Direction Variables
 #define lDirection 4
@@ -114,12 +109,8 @@ void setup() {
 
 	// Servo Setup
 	pinMode(sensorPin, INPUT_PULLUP);
-	mySerial.begin(2400);
-	myFake.begin(2400);
 
-	myFake.listen();
 	Wire.begin();
-
 	servoTurn(0);
 
 	// Ultrasound Setup
@@ -137,7 +128,7 @@ void setup() {
 int test = 1;
 // Main Loop
 void loop() {
-	if (test == 1) {
+	if (test == 1 && state != STANDBY) {
 		Serial.println("Navigate Initiate");
 		navigate();
 		Serial.println("Navigate Finished");
@@ -150,7 +141,7 @@ void navigate() {
 	// Robo Logic
 	// Scan for signal in 180 degrees in front of robot
 	if (state == NAVIGATION) {
-		int angle = servoScan();
+		int angle = 90;// servoScan();
 		// Serial.println(angle);
 		// Check if signal out of bounds
 		if (angle < 0 || angle > 180)
@@ -174,14 +165,14 @@ void navigate() {
 
 // Navigation for long distance
 void distanceNavigation(int angle) {
-	double distance;
+	int distance;
 	Direction lineDirection = getLineDirection();
 
 	// Turns IR-sensor towoards signal
 	servoTurn(angle);
 
 	// While there's a signal and no lines are detected
-	while (lineDirection == STRAIGHT && readSensor()) {
+	while (lineDirection == STRAIGHT) {// && readSensor()) {
 		// Retrieve distance from ultrasound sensor
 		distance = getDistance();
 		// If distance longer than 1m: walk towoards signal with small steps
@@ -190,7 +181,7 @@ void distanceNavigation(int angle) {
 		}
 		// If distance longer than ultrasound lower bound walk all the way towoards it
 		else if (distance > 30) {
-			longWalk(STRAIGHT, 0.65*distance);
+			longWalk(STRAIGHT, 0.60*distance);
 		} else {
 			longWalk(STRAIGHT, 6);
 		}
@@ -201,8 +192,9 @@ void distanceNavigation(int angle) {
 
 // Navigation for docking
 void dockingNavigation(Direction dir) {
+	Serial.println("Initiate Docking Sequence");
 	while (!inDock(dir)) {
-		shortWalk(dir, 1);
+		dockWalk(dir, 1);
 		dir = getLineDirection();
 	}
 }
@@ -210,6 +202,7 @@ void dockingNavigation(Direction dir) {
 // Checks if in dock
 bool inDock(Direction dir) {
 	if (dir == UNKNOWN) {
+		Serial.println("State to STANDBY");
 		state = STANDBY;
 		return true;
 	} else {
@@ -234,7 +227,7 @@ void debugRobotNavigation() {
 void debugPrintServoScan() {
 	Serial.print("Angle (Original Method): ");
 	Serial.println(servoScan());
-	delay(500);
+	delay(1000);
 	// Serial.print("Angle (Average Method): ");
 	// Serial.println(averageServoScan());
 }
@@ -243,7 +236,7 @@ void debugPrintServoScan() {
 void debugPrintUltrasound() {
 	Serial.print("Distance: ");
 	Serial.println(getDistance());
-	delay(50000);
+	delay(1000);
 }
 
 // Tests motor functions
@@ -264,14 +257,14 @@ void debugMotorFunctions() {
 	delay(debugDelayMillis);
 
 	// Short Walk Functions
-	Serial.println("Testing shortWalk()");
-	shortWalk(LEFT, 20);
+	Serial.println("Testing dockWalk()");
+	dockWalk(LEFT, 20);
 	delay(debugDelayMillis);
-	shortWalk(RIGHT, 20);
+	dockWalk(RIGHT, 20);
 	delay(debugDelayMillis);
-	shortWalk(STRAIGHT, 20);
+	dockWalk(STRAIGHT, 20);
 	delay(debugDelayMillis);
-	shortWalk(BACK, 20);
+	dockWalk(BACK, 20);
 	delay(debugDelayMillis);
 
 	// Turn Functions
@@ -504,33 +497,24 @@ void servoTurn(int angle) {
 	currentServoAngle = angle;
 }
 
-// Reads sensor data from programmed signal
+// Reads sensor data
 bool readSensor() {
 	int reading = 0;
-	double lastT = micros();
 
-	while (!mySerial.isListening() || !mySerial.available() && micros() - lastT < 9000) mySerial.listen();
-
-	if (micros() - lastT < 9000) {
-		reading = mySerial.read();
+	// Reads sensor data sensorRead times
+	for (int i = 0; i < sensorRead; i++) {
+		reading += analogRead(sensorPin);	// Data from IR is HIGH when no signal
 	}
-
-	myFake.listen();
-
-	if (reading > 0) {
-		// if (reading == stationValue) {
-		//	readingData = reading;
-		//}
-		//readingData = reading;
+	// If reading is less than sensorReadThreshold return true
+	if (reading < sensorReadThreshold)
 		return true;
-	}
 	else
 		return false;
 }
 
 /*~~~~~~~~~~ Ultrasound Functions ~~~~~~~~~~*/
 // Gets the distance to object in front of robot
-double getDistance() {
+int getDistance() {
 	sendEcho();
 	return recieveEcho();
 }
@@ -546,7 +530,7 @@ void sendEcho() {
 
 // Recieves an ultrasound pulse and returns the distance
 int recieveEcho() {
-	double distance = pulseIn(echoPin, HIGH)/29/2;
+	int distance = pulseIn(echoPin, HIGH)/29/2;
 
 	pulseIn(echoPin, LOW);
 	if (distance < maxDistance && distance > minDistance) {
@@ -570,16 +554,19 @@ void longWalk(Direction dir, int length) {
 	} else {
 		accelerate(accelerationLength);
 		runMotor(steps-2*accelerationLength);
-		if (state == NAVIGATION)
+		if (state == NAVIGATION) {
 			deaccelerate(accelerationLength);
+		}
 	}
 }
 
 // Short walk without acceleration and deacceleration
-void shortWalk(Direction dir, int steps) {
+void dockWalk(Direction dir, int steps) {
 	globalMotorDelay = motorDelayUpperBound-1000;
 	direction(dir);
-	runMotor(steps);
+	for (int i = 0; i < steps; i++) {
+		step(globalMotorDelay);
+	}
 }
 
 /*	Converts length into motor steps
