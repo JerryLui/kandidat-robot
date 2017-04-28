@@ -48,8 +48,8 @@ const int accelerationLength = (motorDelayUpperBound-motorDelayLowerBound)/delay
 unsigned int globalMotorDelay = motorDelayLowerBound;
 
 // Ultrasound Constants
-#define trigPin 10		// Respective pins for ultrasound
-#define echoPin 11
+const int trigPin = 10;		// Respective pins for ultrasound
+const int echoPin = 11;
 
 const int maxDistance = 100;		// Maximum distance in cm
 const int minDistance = 10;
@@ -72,6 +72,35 @@ enum State {
 
 State state; 
 
+// Converts Direction to String
+String directionToString(Direction dir) {
+	switch (dir) {
+		case LEFT:
+			return "Left";
+		case RIGHT:
+			return "Right";
+		case STRAIGHT:
+			return "Straight";
+		case BACK:
+			return "Back";
+		case UNKNOWN:
+			return "Unknown";
+	}
+}
+
+// Converts State to String
+String stateToString(State inputState) {
+	switch (inputState) {
+		case NAVIGATION:
+			return "Navigation";
+		case DOCKING:
+			return "Docking";
+		case STANDBY:
+			return "Standby";
+	}
+}
+
+
 // Setup
 void setup() {
 	// Initiate Serial Contact (for debug purposes)
@@ -87,9 +116,11 @@ void setup() {
 	pinMode(sensorPin, INPUT_PULLUP);
 	mySerial.begin(2400);
 	myFake.begin(2400);
-	
+
 	myFake.listen();
 	Wire.begin();
+
+	servoTurn(0);
 
 	// Ultrasound Setup
 	pinMode(trigPin, OUTPUT);
@@ -101,22 +132,18 @@ void setup() {
 
 	// Sets Global Variables
 	state = NAVIGATION;
+
 }
 
 int test = 1;
 // Main Loop
 void loop() {
 	if (test == 1) {
-		debugRobotNavigation();
-		test++;
-	}
-	else if (test == 2) {
 		debugPrintServoScan();
-		test++;
+		//debugPrintUltrasound();
+		//test++;
+		//Serial.println(getDistance());
 	}
-	// while(state != STANDBY) {
-		// navigate();
-	// }
 }
 
 /*~~~~~~~~~~ Robot Logic ~~~~~~~~~~*/
@@ -125,7 +152,7 @@ void navigate() {
 	// Scan for signal in 180 degrees in front of robot
 	if (state == NAVIGATION) {
 		int angle = servoScan();
-		Serial.println(angle);
+		// Serial.println(angle);
 		// Check if signal out of bounds
 		if (angle < 0 || angle > 180)
 			turnAround();
@@ -197,40 +224,14 @@ void debugRobotNavigation() {
 	Serial.println("Testing Servo Functions: ");
 	debugPrintServoScan();
 	Serial.print("Testing Line Sensor: ");
-	Serial.println(debugDirectionToString(getLineDirection()));
+	Serial.println(directionToString(getLineDirection()));
 }
 
-// Converts Direction to String
-String debugDirectionToString(Direction dir) {
-	switch (dir) {
-		case LEFT:
-			return "Left";
-		case RIGHT:
-			return "Right";
-		case STRAIGHT:
-			return "Straight";
-		case BACK:
-			return "Back";
-		case UNKNOWN:
-			return "Unknown";
-	}
-}
-
-// Converts State to String
-String debugStateToString(State inputState) {
-	switch (inputState) {
-		case NAVIGATION:
-			return "Navigation";
-		case DOCKING:
-			return "Docking";
-		case STANDBY:
-			return "Standby";
-	}
-}
 // Debug Servo
 void debugPrintServoScan() {
 	Serial.print("Angle (Original Method): ");
 	Serial.println(servoScan());
+	delay(500);
 	// Serial.print("Angle (Average Method): ");
 	// Serial.println(averageServoScan());
 }
@@ -239,6 +240,7 @@ void debugPrintServoScan() {
 void debugPrintUltrasound() {
 	Serial.print("Distance: ");
 	Serial.println(getDistance());
+	delay(50000);
 }
 
 // Tests motor functions
@@ -486,13 +488,13 @@ void servoTurn(int angle) {
 	Wire.beginTransmission(servoBoardAddress);
 	Wire.write(angle);	// Send angle
 	Wire.endTransmission();
-	// delay(3);
+	delay(5);
 
 	// Adds an delay for large turns to complete before another task
 	if (abs(angle-currentServoAngle) > 30) {
 		delay((abs(angle-currentServoAngle)/180.0)*800);
 	}
-	
+
 	// Re asigns currentServoAngle
 	currentServoAngle = angle;
 }
@@ -509,8 +511,11 @@ bool readSensor() {
 	}
 
 	myFake.listen();
-
+	
 	if (reading > 0) {
+		// if (reading == stationValue) {
+		//	readingData = reading;
+		//}
 		//readingData = reading;
 		return true;
 	}
@@ -518,19 +523,21 @@ bool readSensor() {
 		return false;
 }
 
-// Reads sensor data from constant signal
-/*bool readSensor() {
+/*// Reads sensor data from constant signal
+	bool readSensor() {
 	int reading = 0;
 
-	// Reads sensor data sensorRead times
-	for (int i = 0; i < sensorRead; i++) {
-		reading += analogRead(sensorPin);	// Data from IR is HIGH when no signal
-	}
-	// If reading is less than sensorReadThreshold return true
-	if (reading < sensorReadThreshold)
-		return true;
-	else
-		return false;
+// Reads sensor data sensorRead times
+for (int i = 0; i < sensorRead; i++) {
+reading += analogRead(sensorPin);	// Data from IR is HIGH when no signal
+}
+
+delay(5);
+// If reading is less than sensorReadThreshold return true
+if (reading < sensorReadThreshold)
+return true;
+else
+return false;
 }*/
 
 /*~~~~~~~~~~ Ultrasound Functions ~~~~~~~~~~*/

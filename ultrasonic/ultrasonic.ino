@@ -2,8 +2,8 @@
 const int maxDistance = 100;		// Maximum distance in cm
 const int minDistance = 10;
 
-const int trigPin = 2;					// Respective pins for ultrasound
-const int echoPin = 3;
+const int trigPin = 10;					// Respective pins for ultrasound
+const int echoPin = 11;
 
 void setup() {
 	Serial.begin(9600);
