@@ -48,10 +48,10 @@ const int maxDistance = 100;		// Maximum distance in cm
 const int minDistance = 10;
 
 // Line Sensor Constants
-#define lineThreshold 30
+#define lineThreshold	23 
 
-const int lineLeftPin = A5;
-const int lineRightPin = A4;
+const int lineLeftPin = A1;
+const int lineRightPin = A2;
 
 // Directions
 enum Direction {
@@ -61,7 +61,7 @@ enum Direction {
 // Setup
 void setup() {
 	// Initiate Serial Contact (for debug purposes)
-	Serial.begin(9600);
+	// Serial.begin(9600);
 
 	// Motor Setup
 	pinMode(lOutput, OUTPUT);pinMode(lStep, OUTPUT);pinMode(lDirection, OUTPUT);
@@ -86,8 +86,8 @@ int test = 1;
 // Main Loop
 void loop() {
 	if (test == 1) {
-		navigate();
-		// test++;
+		dockingNavigation(getLineDirection());
+		test++;
 	}
 }
 
@@ -145,7 +145,7 @@ void distanceNavigation(int angle) {
 // Navigation for docking
 void dockingNavigation(Direction dir) {
 	while (!inDock(dir)) {
-		shortWalk(dir, 3);
+		shortWalk(dir, 1);
 		dir = getLineDirection();
 	}
 }
@@ -248,22 +248,22 @@ Direction getLineDirection() {
 	bool rightData = readRightLineSensor();
 
 	if (!leftData && !rightData)
-		return UNKNOWN; // When no line found
+		return STRAIGHT; // When no line found
 	else if (leftData && !rightData)
 		return RIGHT; 	// When line detected on left sensor
 	else if (!leftData && rightData)
 		return LEFT;		// When line detected on right sensor
 	else
-		return STRAIGHT;	// When line found
+		return UNKNOWN;	// When line found
 }
 // Reads data from left line sensor, returns true if on a line
 bool readLeftLineSensor() {
-	return analogRead(lineLeftPin) > lineThreshold;
+	return analogRead(lineLeftPin) < lineThreshold;
 }
 
 // Reads data from right line sensor, returns true if on a line
 bool readRightLineSensor() {
-	return analogRead(lineRightPin) > lineThreshold;
+	return analogRead(lineRightPin) < lineThreshold;
 }
 
 /*~~~~~~~~~~ Servo Functions ~~~~~~~~~~*/
