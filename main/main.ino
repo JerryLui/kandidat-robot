@@ -1,3 +1,4 @@
+//#include <SoftwareSerial.h>
 #include <Wire.h>
 
 // Global Constants
@@ -12,9 +13,11 @@ const int servoResolution = 1;		// Number of steps per servo degree
 const int minAngle = 0;
 const int maxAngle = 180*servoResolution;
 
-
 // IR-sensor Constants
 const int sensorPin = A3;
+
+//SoftwareSerial mySerial(sensorPin,32);
+//SoftwareSerial myFake(30,31);
 
 const int spanSizeThreshold = 3;
 const int sensorRead = 30;				// Times to read the sensor data
@@ -108,6 +111,10 @@ void setup() {
 
 	// Servo Setup
 	pinMode(sensorPin, INPUT_PULLUP);
+
+	/*mySerial.begin(2400);
+	myFake.begin(2400);
+	myFake.listen();*/
 
 	Wire.begin();
 	servoTurn(0);
@@ -496,20 +503,30 @@ void servoTurn(int angle) {
 	currentServoAngle = angle;
 }
 
-// Reads sensor data
-bool readSensor() {
+bool readSensor() {}
+// Reads a programmable signal
+/*bool readSensor() {
 	int reading = 0;
+	double lastT = micros();
 
-	// Reads sensor data sensorRead times
-	for (int i = 0; i < sensorRead; i++) {
-		reading += analogRead(sensorPin);	// Data from IR is HIGH when no signal
+	while (!mySerial.isListening() || !mySerial.available() && micros() - lastT < 9000) mySerial.listen();
+
+	if (micros() - lastT < 9000) {
+		reading = mySerial.read();
 	}
-	// If reading is less than sensorReadThreshold return true
-	if (reading < sensorReadThreshold)
+
+	myFake.listen();
+
+	if (reading > 0) {
+		// if (reading == stationValue) {
+		//	readingData = reading;
+		//}
+		//readingData = reading;
 		return true;
+	}
 	else
 		return false;
-}
+}*/
 
 /*~~~~~~~~~~ Ultrasound Functions ~~~~~~~~~~*/
 // Gets the distance to object in front of robot
