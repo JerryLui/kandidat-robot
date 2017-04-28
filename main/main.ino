@@ -57,8 +57,8 @@ const int minDistance = 10;
 // Line Sensor Constants
 #define lineThreshold	23 
 
-const int lineLeftPin = A1;
-const int lineRightPin = A2;
+const int leftLinePin = A1;
+const int rightLinePin = A2;
 
 // Directions
 enum Direction {
@@ -299,12 +299,12 @@ Direction getLineDirection() {
 }
 // Reads data from left line sensor, returns true if on a line
 bool readLeftLineSensor() {
-	return analogRead(lineLeftPin) < lineThreshold;
+	return analogRead(leftLinePin) < lineThreshold;
 }
 
 // Reads data from right line sensor, returns true if on a line
 bool readRightLineSensor() {
-	return analogRead(lineRightPin) < lineThreshold;
+	return analogRead(rightLinePin) < lineThreshold;
 }
 
 /*~~~~~~~~~~ Servo Functions ~~~~~~~~~~*/
