@@ -139,8 +139,13 @@ int test = 1;
 // Main Loop
 void loop() {
 	if (test == 1) {
-		dockingNavigation(getLineDirection());
-		test++;
+		//debugPrintServoScan();
+		while (state != STANDBY) {
+			dockingNavigation(getLineDirection());
+		}
+		//test++;
+
+		//Serial.println(getDistance());
 	}
 }
 
@@ -299,12 +304,14 @@ Direction getLineDirection() {
 }
 // Reads data from left line sensor, returns true if on a line
 bool readLeftLineSensor() {
-	return analogRead(leftLinePin) < lineThreshold;
+	// Serial.println(analogRead(leftLinePin));	
+	return analogRead(leftLinePin) > lineThreshold;
 }
 
 // Reads data from right line sensor, returns true if on a line
 bool readRightLineSensor() {
-	return analogRead(rightLinePin) < lineThreshold;
+	// Serial.println(analogRead(rightLinePin));
+	return analogRead(rightLinePin) > lineThreshold;
 }
 
 /*~~~~~~~~~~ Servo Functions ~~~~~~~~~~*/
@@ -508,7 +515,7 @@ bool readSensor() {
 	}
 
 	myFake.listen();
-	
+
 	if (reading > 0) {
 		// if (reading == stationValue) {
 		//	readingData = reading;
