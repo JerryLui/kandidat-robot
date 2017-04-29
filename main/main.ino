@@ -603,8 +603,13 @@ void runMotor(int steps) {
 void accelerate(int steps) {
 	int currentDelay = motorDelayUpperBound;
 	for (int i = 0; i < steps; i++) {
-		step(currentDelay);
-		currentDelay = decrementDelay(currentDelay);
+		if (getLineDirection() == STRAIGHT) {
+			step(currentDelay);
+			currentDelay = decrementDelay(currentDelay);
+		} else {
+			state = DOCKING;
+			break;
+		}
 	}
 	globalMotorDelay = currentDelay;
 }
@@ -613,8 +618,12 @@ void accelerate(int steps) {
 void deaccelerate(int steps) {
 	int currentDelay = globalMotorDelay;
 	for (int i = 0; i < steps; i++) {
-		step(currentDelay);
-		currentDelay = incrementDelay(currentDelay);
+		if (getLineDirection() == STRAIGHT) {
+			step(currentDelay);
+			currentDelay = incrementDelay(currentDelay);
+		} else {
+			state == DOCKING;
+		}
 	}
 	globalMotorDelay = currentDelay;
 }
