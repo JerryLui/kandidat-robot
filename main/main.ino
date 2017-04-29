@@ -553,9 +553,7 @@ void longWalk(Direction dir, int length) {
 	} else {
 		accelerate(accelerationLength);
 		runMotor(steps-2*accelerationLength);
-		if (state == NAVIGATION) {
-			deaccelerate(accelerationLength);
-		}
+		deaccelerate(accelerationLength);
 	}
 }
 
@@ -589,10 +587,11 @@ void turn(Direction dir, double angle) {
 
 // Runs motor for given amount of steps
 void runMotor(int steps) {
-	for (int i = 0; i < steps; i++) {
+	while (state == NAVIGATION && steps > 0) {
+		// Checks if any docking pattern is found
 		if (getLineDirection() == STRAIGHT) {
-			step(globalMotorDelay);
-		} else {
+			step();
+		} else { // Change state to docking
 			state = DOCKING;
 			break;
 		}
@@ -601,48 +600,47 @@ void runMotor(int steps) {
 
 // Accelerates in given number of steps, returns the current motor delay
 void accelerate(int steps) {
-	int currentDelay = motorDelayUpperBound;
-	for (int i = 0; i < steps; i++) {
+	while (state == NAVIGATION && steps > 0) {
+		// Checks if any docking pattern is found
 		if (getLineDirection() == STRAIGHT) {
-			step(currentDelay);
-			currentDelay = decrementDelay(currentDelay);
-		} else {
+			step();
+			decrementDelay();
+		} else { // Change state to docking
 			state = DOCKING;
 			break;
 		}
+		steps++;
 	}
-	globalMotorDelay = currentDelay;
 }
 
 // Deaccelerates in given number of steps, returns the current motor delay
 void deaccelerate(int steps) {
-	int currentDelay = globalMotorDelay;
-	for (int i = 0; i < steps; i++) {
+	while (state == NAVIGATION && steps > 0) {
+		// Checks if any docking pattern is found
 		if (getLineDirection() == STRAIGHT) {
-			step(currentDelay);
-			currentDelay = incrementDelay(currentDelay);
-		} else {
+			step();
+			incrementDelay();
+		} else { // Change state to docking
 			state == DOCKING;
 		}
 	}
-	globalMotorDelay = currentDelay;
 }
 
 // Increments motor delay time by delayIncrement
-int incrementDelay(int delayTime) {
-	if (delayTime < motorDelayUpperBound) {
-		return delayTime + delayIncrement;
+int incrementDelay() {
+	if (globalMotorDelay < motorDelayUpperBound) {
+		return globalMotorDelay + delayIncrement;
 	} else {
-		return delayTime;
+		return globalMotorDelay;
 	}
 }
 
 // Decrements motor delay time by delayIncrement
-int decrementDelay(int delayTime) {
-	if (delayTime > motorDelayLowerBound) {
-		return delayTime - delayIncrement;
+int decrementDelay() {
+	if (globalMotorDelay > motorDelayLowerBound) {
+		return globalMotorDelay - delayIncrement;
 	} else {
-		return delayTime;
+		return globalMotorDelay;
 	}
 }
 
@@ -657,10 +655,10 @@ void turnAround(Direction dir) {
 }
 
 // Moves one step by sending out a square wave with the input motorDelay
-void step(int motorDelay) {
-	delayMicroseconds(motorDelay);
+void step() {
+	delayMicroseconds(globalMotorDelay);
 	digitalWrite(lStep, HIGH);digitalWrite(rStep, HIGH);
-	delayMicroseconds(motorDelay);
+	delayMicroseconds(globalMotorDelay);
 	digitalWrite(lStep, LOW);digitalWrite(rStep, LOW);
 }
 
