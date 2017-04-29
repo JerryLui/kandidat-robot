@@ -595,6 +595,7 @@ void runMotor(int steps) {
 			state = DOCKING;
 			break;
 		}
+		steps--;
 	}
 }
 
@@ -609,7 +610,7 @@ void accelerate(int steps) {
 			state = DOCKING;
 			break;
 		}
-		steps++;
+		steps--;
 	}
 }
 
@@ -623,6 +624,7 @@ void deaccelerate(int steps) {
 		} else { // Change state to docking
 			state == DOCKING;
 		}
+		steps--;
 	}
 }
 
