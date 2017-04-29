@@ -562,7 +562,7 @@ void dockWalk(Direction dir, int steps) {
 	globalMotorDelay = motorDelayUpperBound-1000;
 	direction(dir);
 	for (int i = 0; i < steps; i++) {
-		step(globalMotorDelay);
+		step();
 	}
 }
 
