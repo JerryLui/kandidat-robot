@@ -635,7 +635,7 @@ int incrementDelay() {
 
 // Decrements motor delay time by delayIncrement
 int decrementDelay() {
-	if (globalMotorDelay > motorDelayLowerBound) {
+	if (globalMotorDelay > motorDelayLowerBound) 
 		globalMotorDelay -= delayIncrement;
 }
 
