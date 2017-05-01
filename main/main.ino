@@ -12,7 +12,6 @@ const int servoResolution = 1;		// Number of steps per servo degree
 const int minAngle = 0;
 const int maxAngle = 180*servoResolution;
 
-
 // IR-sensor Constants
 const int sensorPin = A3;
 
@@ -295,13 +294,13 @@ Direction getLineDirection() {
 	else
 		return UNKNOWN;	// When line found
 }
-// Reads data from left line sensor, returns true if on a line
+// Reads data from left line sensor, returns true if on a dark area
 bool readLeftLineSensor() {
 	// Serial.println(analogRead(leftLinePin));
 	return analogRead(leftLinePin) < lineThreshold;
 }
 
-// Reads data from right line sensor, returns true if on a line
+// Reads data from right line sensor, returns true if on a dark area
 bool readRightLineSensor() {
 	// Serial.println(analogRead(rightLinePin));
 	return analogRead(rightLinePin) < lineThreshold;
@@ -630,20 +629,14 @@ void deaccelerate(int steps) {
 
 // Increments motor delay time by delayIncrement
 int incrementDelay() {
-	if (globalMotorDelay < motorDelayUpperBound) {
-		return globalMotorDelay + delayIncrement;
-	} else {
-		return globalMotorDelay;
-	}
+	if (globalMotorDelay < motorDelayLowerBound)
+		globalMotorDelay += delayIncrement;
 }
 
 // Decrements motor delay time by delayIncrement
 int decrementDelay() {
 	if (globalMotorDelay > motorDelayLowerBound) {
-		return globalMotorDelay - delayIncrement;
-	} else {
-		return globalMotorDelay;
-	}
+		globalMotorDelay -= delayIncrement;
 }
 
 // Turns around 180 degrees anti clockwise
@@ -666,7 +659,7 @@ void step() {
 
 // Changes the direction of motors
 void direction(Direction dir) {
-	switch(dir) {
+	switch (dir) {
 		case LEFT:
 			digitalWrite(lDirection, LOW);
 			digitalWrite(rDirection, LOW);
