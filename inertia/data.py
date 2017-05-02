@@ -53,16 +53,13 @@ while 1:
     # Read euler
     euler_x,euler_y,euler_z = bno.read_euler()
     
-    timeNow = 0
     # Serial output
     if counter%100 == 0:
-        print(time.clock()-timeNow)
-        timeNow = time.clock()
         print(str(counter)+'\t'+str(sys)+'\t'+str(accel)+'\t'+str(gyro))
 
-    tmp = str(counter)+'\t'+str(acc_x)+'\t'+str(acc_y)+'\t'+str(acc_z)+'\t'+str(gyro_x)+'\t'+str(gyro_y)+'\t'+str(gyro_z)+'\t'+str(euler_x)+'\t'+str(euler_y)+'\t'+str(euler_z)+'\t'+str(sys)+'\t'+str(accel)+'\t'+str(gyro)+'\n'
+    tmp = str(counter)+'\t'+str(acc_x)+'\t'+str(acc_y)+'\t'+str(acc_z)+'\t'+str(gyro_x)+'\t'+str(gyro_y)+'\t'+str(gyro_z)+'\t'+str(euler_x)+'\t'+str(euler_y)+'\t'+str(euler_z)+'\t'+str(sys)+'\t'+str(accel)+'\t'+str(gyro)+'\t'+str(time.time())+'\n'
     file.write(tmp)
-    time.sleep(0.005) # Edit depending on output string
+    # time.sleep(0.0008) # Edit depending on output string
     counter = counter + 1
 
 endTime = float(time.time())
