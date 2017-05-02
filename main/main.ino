@@ -50,8 +50,8 @@ const int minDistance = 10;
 // Line Sensor Constants
 #define lineThreshold	23
 
-const int leftLinePin = A1;
-const int rightLinePin = A2;
+const int leftLinePin = A2;
+const int rightLinePin = A1;
 
 // Directions
 enum Direction {
@@ -139,7 +139,7 @@ void navigate() {
 	// Robo Logic
 	// Scan for signal in 180 degrees in front of robot
 	if (state == NAVIGATION) {
-		int angle = 90;// servoScan();	// TODO: FIX
+		int angle = servoScan();	// TODO: FIX
 		// Serial.println(angle);
 		// Check if signal out of bounds
 		if (angle < 0 || angle > 180)

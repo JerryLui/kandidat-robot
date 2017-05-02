@@ -1,6 +1,6 @@
-#include <Event.h>
-#include <Timer.h>
-#include <SoftwareSerial.h>
+//#include <Event.h>
+//#include <Timer.h>
+//#include <SoftwareSerial.h>
 #include <Wire.h>
 
 #define analogMax 1023
@@ -16,8 +16,8 @@ const int maxAngle = 180 * servoResolution;
 const int sensorPin = A3;
 int readingData;
 
-SoftwareSerial mySerial(A3,32);
-SoftwareSerial myFake(30,31);
+//SoftwareSerial mySerial(A3,32);
+//SoftwareSerial myFake(30,31);
 
 const int spanSizeThreshold = 3;
 const int sensorRead = 20;				// Times to read the sensor data
@@ -35,11 +35,11 @@ void setup() {
 
 	// Servo Setup
 	pinMode(sensorPin, INPUT_PULLUP);
-	mySerial.begin(2400);
-	myFake.begin(2400);
-
-	// Servo.attach(servoPin);
-	myFake.listen();
+//	mySerial.begin(2400);
+//	myFake.begin(2400);
+//
+//	// Servo.attach(servoPin);
+//	myFake.listen();
 	Wire.begin();
 
 	// Reading Data
@@ -47,6 +47,7 @@ void setup() {
 }
 
 void loop() {
+	Serial.println("Initiate Scanning.");
 	Serial.println(servoScan());
 }
 
@@ -91,7 +92,6 @@ int incrementalSweepScan(int startAngle, int endAngle) {
 	while (startAngle < endAngle) {
 		// Turns reciever towoards the angle
 		servoTurn(startAngle/servoResolution);
-
 		// If a signal is found
 		if (readSensor()) {
 			spanSize++;					// Increase the span size
@@ -224,7 +224,6 @@ double currentServoAngle;
 
 // Turns servo to the given angle
 void servoTurn(int angle) {
-
 	Wire.beginTransmission(servoBoardAddress);
 	Wire.write(angle);
 	Wire.endTransmission();
@@ -240,7 +239,7 @@ void servoTurn(int angle) {
 
 
 // Reads sensor data
-bool readSensor() {
+/*bool readSensor() {
 	int reading = 0;
 	double lastT = micros();
 
@@ -257,20 +256,20 @@ bool readSensor() {
 	}
 	else
 		return false;
-}
+}*/
 
 // Reads sensor data sensorRead times
-/*bool bajsreadSensor() {
+bool readSensor() {
 	int reading = 0;
+	int data;
 	for (int i = 0; i < sensorRead; i++) {
-		reading += analogRead(sensorPin);	// Data from IR is HIGH when no signal
+		data = analogRead(sensorPin);
+		reading += data;
+		Serial.println(data);
+		delay(50);
+		// reading += analogRead(sensorPin);	// Data from IR is HIGH when no signal
 	}
 
 	// If reading is less than sensorReadThreshold return true
-	if (reading < sensorReadThreshold) {
-		return true;
-	}
-	else {
-		return false;
-	}	
-}*/
+	return reading < sensorReadThreshold;
+}
