@@ -19,7 +19,7 @@ int readingData;
 //SoftwareSerial mySerial(A3,32);
 //SoftwareSerial myFake(30,31);
 
-const int spanSizeThreshold = 3;
+const int spanSizeThreshold = 2;
 const int sensorRead = 20;				// Times to read the sensor data
 const int sensorReadThreshold = analogMax * sensorRead * 0.64;	// Upperbound for ir 0.64
 
@@ -56,13 +56,13 @@ void loop() {
 int servoScan() {
 	// First sweep scan using max span size method
 	int clockwiseRead = sweepScan(minAngle, maxAngle);
-	// Serial.println(clockwiseRead);
+	Serial.println(clockwiseRead);
 	if (clockwiseRead < 0)
 		return -1;
 
 	// Second sweep scan using max span size method
 	int counterClockwiseRead = sweepScan(maxAngle, minAngle);
-	// Serial.println(counterClockwiseRead);
+	Serial.println(counterClockwiseRead);
 	if (counterClockwiseRead < 0) 
 		return -1;
 
@@ -263,11 +263,11 @@ bool readSensor() {
 	int reading = 0;
 	int data;
 	for (int i = 0; i < sensorRead; i++) {
-		data = analogRead(sensorPin);
+		/*data = analogRead(sensorPin);
 		reading += data;
 		Serial.println(data);
-		delay(50);
-		// reading += analogRead(sensorPin);	// Data from IR is HIGH when no signal
+		delay(50);*/
+		reading += analogRead(sensorPin);	// Data from IR is HIGH when no signal
 	}
 
 	// If reading is less than sensorReadThreshold return true

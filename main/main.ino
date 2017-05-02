@@ -504,10 +504,7 @@ bool readSensor() {
 		reading += analogRead(sensorPin);	// Data from IR is HIGH when no signal
 	}
 	// If reading is less than sensorReadThreshold return true
-	if (reading < sensorReadThreshold)
-		return true;
-	else
-		return false;
+	return reading < sensorReadThreshold;
 }
 
 /*~~~~~~~~~~ Ultrasound Functions ~~~~~~~~~~*/
