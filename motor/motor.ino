@@ -36,39 +36,8 @@ void setup() {
 }
 
 void loop() {
-	// Robo Logic
-	// Scan for signal in 180 degrees in front of robot
-	int angle = scan();
-	int distance;
-
-	// Check if signal out of bounds
-	if (angle < 0 || angle > 180) {} 
-	else if (angle > 95) {
-		turn(LEFT, abs(90-angle));	// Rotate robot by given angular difference
-	} 
-	else if (angle < 85) {
-		turn(RIGHT, abs(90-angle)); // Rotate robot by given anlgular difference
-	} 
-	else {
-		// Turns IR-sensor towoards signal
-		servoTurn(angle);
-		// While there's a signal, go towoards it
-		while (readSensor()) {
-			// Retrieve distance from ultrasound sensor
-			distance = getDistance();
-			// If distance longer than 1m: walk towoards signal with small steps 
-			if (distance > 100) {
-				walk(STRAIGHT, 10);
-			}
-			// If distance longer than ultrasound lower bound walk all the way towoards it
-			else if (distance > 10) {
-				walk(STRAIGHT, 0.95*distance);
-			}
-			else if (distance < 10) {
-				// CLOSE RANGE CODE
-			}
-		}
-	}
+	globalMotorDelay = motorDelayLowerBound;
+  runMotor(300);
 }
 
 /*~~~~~~~~~~ Motor Functions ~~~~~~~~~~~~*/
@@ -98,10 +67,10 @@ int lengthToSteps(int length) {
 }
 
 // Turns towoards direction by given angle
-void turn(Direction dir, int angle) {
+void turn(Direction dir, double angle) {
 	direction(dir);
 	globalMotorDelay = motorDelayLowerBound;
-	runMotor(angle/180*stepsPerTurn);
+	runMotor(angle/180.0*stepsPerTurn);
 }
 
 // Runs motor for given amount of steps
