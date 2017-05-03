@@ -241,22 +241,35 @@ void servoTurn(int angle) {
 
 // Reads sensor data
 bool readSensor() {
-	int reading = 0;
-	double lastT = micros();
+  int reading = 0;
+  double lastT = micros();
 
-	while (!mySerial.isListening() || !mySerial.available() && micros() - lastT < 9000) mySerial.listen();
-	if (micros() - lastT < 9000) { //mySerial.available()&&
-		reading = mySerial.read();
-	}
+  while (!mySerial.isListening() || !mySerial.available() && micros() - lastT < 11000) mySerial.listen();
+  if (micros() - lastT < 11000) { //mySerial.available()&&
+    reading = mySerial.read();
+  }
 
-	myFake.listen();
+  myFake.listen();
+  /*return reading;*/
+  if (reading > 0) {
+    readingData = reading;
+    return true;
+  }
+  else
+    return false;
 
-	if (reading > 0) {
-		readingData = reading;
-		return true;
-	}
-	else
-		return false;
+  /* Test kod för readsensormetoden
+  int inst = 40;
+  bool Readings [inst];
+  for(int i = 0; i<inst; i++){
+    Readings[i]=readSensor();
+  }
+  for(int i = 0; i<inst; i++){
+    Serial.print(Readings[i]);
+    Serial.print(" ");
+  }
+  Serial.println();
+  */
 }
 
 // Reads sensor data sensorRead times
