@@ -1,4 +1,4 @@
-//#include <SoftwareSerial.h>
+#include <SoftwareSerial.h>
 #include <Wire.h>
 
 // Global Constants
@@ -16,8 +16,8 @@ const int maxAngle = 180*servoResolution;
 // IR-sensor Constants
 const int sensorPin = A3;
 
-//SoftwareSerial mySerial(sensorPin,32);
-//SoftwareSerial myFake(30,31);
+SoftwareSerial mySerial(sensorPin,32);
+SoftwareSerial myFake(30,31);
 
 const int spanSizeThreshold = 3;
 const int sensorRead = 30;				// Times to read the sensor data
@@ -112,12 +112,26 @@ void setup() {
 	// Servo Setup
 	pinMode(sensorPin, INPUT_PULLUP);
 
-	/*mySerial.begin(2400);
+	mySerial.begin(2400);
 	myFake.begin(2400);
-	myFake.listen();*/
-
-	Wire.begin();
-	servoTurn(0);
+	myFake.listen();
+  Wire.begin();
+	
+  while(true){
+    for(int g = 1; g<180; g++){
+      Serial.println("HEJ");
+      //delay(20);
+      Wire.beginTransmission(servoBoardAddress);
+      //Serial.println("B"); 
+      Wire.write(g);  // Send angle
+      //Serial.println("C");
+      Wire.endTransmission();
+      /*servoTurn(i);
+      Serial.println();
+      Serial.println(g);
+      Serial.println(); */
+    }
+  }
 
 	// Ultrasound Setup
 	pinMode(trigPin, OUTPUT);
@@ -147,7 +161,7 @@ void navigate() {
 	// Robo Logic
 	// Scan for signal in 180 degrees in front of robot
 	if (state == NAVIGATION) {
-		int angle = 90;// servoScan();	// TODO: FIX
+		int angle = servoScan();	// TODO: FIX
 		// Serial.println(angle);
 		// Check if signal out of bounds
 		if (angle < 0 || angle > 180)
@@ -317,9 +331,13 @@ bool readRightLineSensor() {
 /*~~~~~~~~~~ Servo Functions ~~~~~~~~~~*/
 // Scans 0-180 degrees in front of the robot, returns angle for which there is a signal
 int servoScan() {
-	// First sweep scan using max span size method
+  //int minA = minAngle; int maxA = maxAngle;
+	// First sweep scan using max span size method 
+  Serial.println();
+  Serial.println(minAngle);
 	int clockwiseRead = sweepScan(minAngle, maxAngle);
-	// Serial.println(clockwiseRead);
+  Serial.println();
+	Serial.println(minAngle);
 	if (clockwiseRead < 0)
 		return -1;
 
@@ -488,45 +506,59 @@ double currentServoAngle;
 
 // OLD: Turns servo to the given angle
 void servoTurn(int angle) {
+  Serial.println(angle);
+  
 	// Begin transmission to second board
 	Wire.beginTransmission(servoBoardAddress);
+  //Serial.println("B");
 	Wire.write(angle);	// Send angle
+  //Serial.println("C");
 	Wire.endTransmission();
+  //Serial.println("D");
 	delay(5);
 
 	// Adds an delay for large turns to complete before another task
-	if (abs(angle-currentServoAngle) > 30) {
+	/*if (abs(angle-currentServoAngle) > 30) {
 		delay((abs(angle-currentServoAngle)/180.0)*800);
 	}
 
 	// Re asigns currentServoAngle
 	currentServoAngle = angle;
+  //Serial.println(currentServoAngle);*/
 }
 
-bool readSensor() {}
-// Reads a programmable signal
-/*bool readSensor() {
-	int reading = 0;
-	double lastT = micros();
+bool readSensor() {
+  int reading = 0;
+  double lastT = micros();
 
-	while (!mySerial.isListening() || !mySerial.available() && micros() - lastT < 9000) mySerial.listen();
+  while (!mySerial.isListening() || !mySerial.available() && micros() - lastT < 11000) mySerial.listen();
+  if (micros() - lastT < 11000) { //mySerial.available()&&
+    reading = mySerial.read();
+  }
 
-	if (micros() - lastT < 9000) {
-		reading = mySerial.read();
-	}
+  myFake.listen();
+  /*return reading;*/
+  if (reading > 0) {
+    //readingData = reading;
+    return true;
+  }
+  else
+    return false;
 
-	myFake.listen();
+  /* Test kod för readsensormetoden
+  int inst = 40;
+  bool Readings [inst];
+  for(int i = 0; i<inst; i++){
+    Readings[i]=readSensor();
+  }
+  for(int i = 0; i<inst; i++){
+    Serial.print(Readings[i]);
+    Serial.print(" ");
+  }
+  Serial.println();
+  */
+}
 
-	if (reading > 0) {
-		// if (reading == stationValue) {
-		//	readingData = reading;
-		//}
-		//readingData = reading;
-		return true;
-	}
-	else
-		return false;
-}*/
 
 /*~~~~~~~~~~ Ultrasound Functions ~~~~~~~~~~*/
 // Gets the distance to object in front of robot
