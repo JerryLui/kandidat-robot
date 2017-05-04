@@ -49,7 +49,7 @@ const int maxDistance = 100;		// Maximum distance in cm
 const int minDistance = 10;
 
 // Line Sensor Constants
-#define lineThreshold	10
+#define lineThreshold	23
 
 const int leftLinePin = A2;
 const int rightLinePin = A1;
@@ -139,7 +139,7 @@ void loop() {
 void navigate() {
 	// Robo Logic
 	// Scan for signal in 180 degrees in front of robot
-	if (state == NAVIGATION) {
+	if (state == NAVIGATION && !inDockingRange(getDistance())) {
 		int angle = servoScan();
 		// Serial.println(angle);
 		// Check if signal out of bounds
@@ -177,7 +177,7 @@ void distanceNavigation(int angle, int distance) {
 		}
 		// If distance longer than ultrasound lower bound walk all the way towoards it
 		else if (distance > 30) {
-			longWalk(STRAIGHT, 0.8*distance);
+			longWalk(STRAIGHT, 0.78*distance);
 		} else {
 			longWalk(STRAIGHT, 6);
 		}
@@ -194,7 +194,12 @@ void dockingNavigation(Direction dir) {
 }
 
 bool inDockingRange(int distance) {
-	return distance < 30 && distance > 10;
+	if (distance < 30 && distance > 10) {
+		state = DOCKING;
+		return true;
+	} else {
+		return false;
+	}
 }
 
 // Checks if in dock
