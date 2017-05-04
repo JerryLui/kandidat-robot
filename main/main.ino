@@ -140,7 +140,7 @@ void navigate() {
 	// Robo Logic
 	// Scan for signal in 180 degrees in front of robot
 	if (state == NAVIGATION) {
-		int angle = servoScan();	// TODO: FIX
+		int angle = servoScan();
 		// Serial.println(angle);
 		// Check if signal out of bounds
 		if (angle < 0 || angle > 180)
@@ -149,9 +149,10 @@ void navigate() {
 			turn(LEFT, abs(90-angle));	// Rotate robot by given angular difference
 		else if (angle < 85)
 			turn(RIGHT, abs(90-angle)); // Rotate robot by given anlgular difference
-		else {												// Else, signal is straight ahead
-			if (getLineDirection() == STRAIGHT) {	// While no line detected
-				distanceNavigation(angle);
+		else {
+			int distance = getDistance(); // Else, signal is straight ahead
+			if (!inDockingRange(distance)) {	// While no line detected
+				distanceNavigation(angle, distance);
 			} else {
 				state = DOCKING;
 			}
@@ -163,45 +164,42 @@ void navigate() {
 }
 
 // Navigation for long distance
-void distanceNavigation(int angle) {
-	int distance;
-	Direction lineDirection = getLineDirection();
-
+void distanceNavigation(int angle, int distance) {
 	// Turns IR-sensor towoards signal
 	servoTurn(angle);
 
 	// While there's a signal and no lines are detected
-	while (lineDirection == STRAIGHT && readSensor()) { 
+	while (readSensor() && !inDockingRange(distance)) {
 		// Retrieve distance from ultrasound sensor
-		distance = getDistance();
 		// If distance longer than 1m: walk towoards signal with small steps
 		if (distance > 100 || distance < 10) {
-			longWalk(STRAIGHT, 6);
+			longWalk(STRAIGHT, 12);
 		}
 		// If distance longer than ultrasound lower bound walk all the way towoards it
 		else if (distance > 30) {
-			longWalk(STRAIGHT, 0.60*distance);
+			longWalk(STRAIGHT, 0.8*distance);
 		} else {
 			longWalk(STRAIGHT, 6);
 		}
-		// Checks if ther's any docking-markings
-		lineDirection = getLineDirection();
+		distance = getDistance();
 	}
 }
 
 // Navigation for docking
 void dockingNavigation(Direction dir) {
-	Serial.println("Initiate Docking Sequence");
 	while (!inDock(dir)) {
 		dockWalk(dir, 1);
 		dir = getLineDirection();
 	}
 }
 
+bool inDockingRange(int distance) {
+	return distance < 30 && distance > 10;
+}
+
 // Checks if in dock
 bool inDock(Direction dir) {
 	if (dir == UNKNOWN) {
-		Serial.println("State to STANDBY");
 		state = STANDBY;
 		return true;
 	} else {
@@ -324,19 +322,15 @@ int servoScan() {
 		return -1;
 
 	// If difference between the two readings differ by more than 12 degrees
-	if (abs(clockwiseRead-counterClockwiseRead) > 12)
-		return -1;
-	else
-		return (clockwiseRead+counterClockwiseRead)/2;	// Return the average of two readings
+	return abs(clockwiseRead-counterClockwiseRead) > maxAngleDiff ? 
+	-1 : (clockwiseRead+counterClockwiseRead)/2;	// Return the average of two readings
 
 }
 
 // Performs a incremental- or decremental sweep depending on input angles
 int sweepScan(int startAngle, int endAngle) {
-	if (startAngle < endAngle)
-		return incrementalSweepScan(startAngle, endAngle);
-	else
-		return decrementalSweepScan(startAngle, endAngle);
+	return startAngle < endAngle ?
+	incrementalSweepScan(startAngle, endAngle) : decrementalSweepScan(startAngle, endAngle);
 }
 
 // Incremental sweep method by finding the largest span
@@ -408,18 +402,14 @@ int averageServoScan() {
 
 	// Returns -1 if difference between the result from first & second sweep are
 	// larger than 5 degrees. Else returns the angle at which a signal was found.
-	if (abs(secondSweepAverage-firstSweepAverage) > 5*servoResolution)
-		return -1;
-	else
-		return ((firstSweepAverage + secondSweepAverage)/2)/servoResolution;
+	return abs(secondSweepAverage-firstSweepAverage) > maxAngleDiff ? 
+	-1 : (firstSweepAverage + secondSweepAverage)/2;
 }
 
 // Stupid ethod to chose between incremental & decremental search
 int averageSweep(int startAngle, int endAngle) {
-	if (startAngle < endAngle)
-		return averageIncrementalSweep(startAngle, endAngle);
-	else
-		return averageDecrementalSweep(startAngle, endAngle);
+	return startAngle < endAngle ? 
+		averageDecrementalSweep(startAngle, endAngle) : averageDecrementalSweep(startAngle, endAngle);
 }
 
 // Average incremental sweep used in averageScan() method.
@@ -447,7 +437,7 @@ int averageIncrementalSweep(int startAngle, int endAngle) {
 		}
 		startAngle++;
 	}
-	return total/elements;
+	return (total/elements)/servoResolution;
 }
 
 // Average decremental sweep
@@ -474,7 +464,7 @@ int averageDecrementalSweep(int startAngle, int endAngle) {
 		}
 		startAngle--;
 	}
-	return total/elements;
+	return (total/elements)/servoResolution;
 }
 
 // Help variable for large turns
@@ -559,9 +549,12 @@ void longWalk(Direction dir, int length) {
 void dockWalk(Direction dir, int steps) {
 	globalMotorDelay = motorDelayUpperBound-1000;
 	direction(dir);
-	for (int i = 0; i < steps; i++) {
-		step();
+	if (steps > 1) {
+		for (int i = 0; i < steps; i++) {
+			step();
+		}
 	}
+	else step();
 }
 
 /*	Converts length into motor steps
@@ -578,51 +571,31 @@ void turn(Direction dir, double angle) {
 	if (dir != LEFT && dir != RIGHT) {}
 	else {
 		direction(dir);
-		globalMotorDelay = motorDelayLowerBound;
+		globalMotorDelay = motorDelayLowerBound+1000;
 		runMotor((angle/180.0)*stepsPerTurn);
 	}
 }
 
 // Runs motor for given amount of steps
 void runMotor(int steps) {
-	while (state == NAVIGATION && steps > 0) {
-		// Checks if any docking pattern is found
-		if (getLineDirection() == STRAIGHT) {
-			step();
-		} else { // Change state to docking
-			state = DOCKING;
-			break;
-		}
-		steps--;
+	for (; steps > 0; steps--) {
+		step();
 	}
 }
 
 // Accelerates in given number of steps, returns the current motor delay
 void accelerate(int steps) {
-	while (state == NAVIGATION && steps > 0) {
-		// Checks if any docking pattern is found
-		if (getLineDirection() == STRAIGHT) {
-			step();
-			decrementDelay();
-		} else { // Change state to docking
-			state = DOCKING;
-			break;
-		}
-		steps--;
+	for (; steps > 0; steps--) {
+		step();
+		decrementDelay();
 	}
 }
 
 // Deaccelerates in given number of steps, returns the current motor delay
 void deaccelerate(int steps) {
-	while (state == NAVIGATION && steps > 0) {
-		// Checks if any docking pattern is found
-		if (getLineDirection() == STRAIGHT) {
-			step();
-			incrementDelay();
-		} else { // Change state to docking
-			state == DOCKING;
-		}
-		steps--;
+	for (; steps > 0; steps--) {
+		step();
+		incrementDelay();
 	}
 }
 
@@ -634,7 +607,7 @@ int incrementDelay() {
 
 // Decrements motor delay time by delayIncrement
 int decrementDelay() {
-	if (globalMotorDelay > motorDelayLowerBound) 
+	if (globalMotorDelay > motorDelayLowerBound)
 		globalMotorDelay -= delayIncrement;
 }
 
