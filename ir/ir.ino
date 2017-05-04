@@ -7,20 +7,19 @@
 #define pi 3.1416
 #define servoBoardAddress 2
 
-const int servoThreshold  = 80;
-const int servoResolution = 1;		// Number of steps per servo degree
+const int servoResolution = 1;		// Number of steps per servo degree TODO: returns faulty if > 1
 const int minAngle = 0;
 const int maxAngle = 180 * servoResolution;
 
 // IR-sensor Constants
 const int sensorPin = A3;
-int readingData;
 
-//SoftwareSerial mySerial(A3,32);
-//SoftwareSerial myFake(30,31);
+// Scanner Thresholds
+const int spanSizeThreshold = 3;
+const int maxAngleDiff = servoResolution * 15;
 
-const int spanSizeThreshold = 2;
-const int sensorRead = 20;				// Times to read the sensor data
+// readSensor() constants
+const int sensorRead = 30;				// Times to read the sensor data
 const int sensorReadThreshold = analogMax * sensorRead * 0.64;	// Upperbound for ir 0.64
 
 bool sensor = false;
@@ -35,15 +34,8 @@ void setup() {
 
 	// Servo Setup
 	pinMode(sensorPin, INPUT_PULLUP);
-//	mySerial.begin(2400);
-//	myFake.begin(2400);
-//
-//	// Servo.attach(servoPin);
-//	myFake.listen();
 	Wire.begin();
 
-	// Reading Data
-	readingData = 0;
 }
 
 void loop() {
@@ -66,20 +58,15 @@ int servoScan() {
 	if (counterClockwiseRead < 0) 
 		return -1;
 
-	// If difference between the two readings differ by more than 12 degrees
-	if (abs(clockwiseRead-counterClockwiseRead) > 12)
-		return -1;
-	else
-		return (clockwiseRead+counterClockwiseRead)/2;	// Return the average of two readings
-
+	// If difference between the two readings differ by more than maxAngleDiff
+	return abs(clockwiseRead-counterClockwiseRead) > maxAngleDiff ? 
+	-1 : (clockwiseRead+counterClockwiseRead)/2;
 }
 
 // Performs a incremental- or decremental sweep depending on input angles
 int sweepScan(int startAngle, int endAngle) {
-	if (startAngle < endAngle)
-		return incrementalSweepScan(startAngle, endAngle);
-	else
-		return decrementalSweepScan(startAngle, endAngle);
+	return startAngle < endAngle ? 
+	incrementalSweepScan(startAngle, endAngle) : decrementalSweepScan(startAngle, endAngle);
 }
 
 // Incremental sweep method by finding the largest span
@@ -96,13 +83,12 @@ int incrementalSweepScan(int startAngle, int endAngle) {
 		if (readSensor()) {
 			spanSize++;					// Increase the span size
 		} else if (spanSize != 0) {			// Otherwise
-			if (maxSpanSize < spanSize) {	// If current span is largest
+		if (maxSpanSize < spanSize) {	// If current span is largest
 				maxSpanSize = spanSize;			// Save it as largest
 				spanEnd = startAngle-1;							// Save the last element of span
 			}
 			spanSize = 0;				// Reset span size
 		}
-
 		startAngle++;
 	}
 
@@ -131,7 +117,6 @@ int decrementalSweepScan(int startAngle, int endAngle) {
 			}
 			spanSize = 0;				// Reset span size
 		}
-
 		startAngle--;
 	}
 
@@ -143,25 +128,26 @@ int decrementalSweepScan(int startAngle, int endAngle) {
 int averageServoScan() {
 	// Stores the average of signal position
 	int firstSweepAverage = averageSweep(minAngle, maxAngle);
-	//Serial.println(firstSweepAverage);
+	Serial.println(firstSweepAverage);
+	if (firstSweepAverage == -1) 
+		return false;
 
 	// Stores the average pos from second sweep
 	int secondSweepAverage = averageSweep(maxAngle, minAngle);
+	Serial.println(secondSweepAverage);
+	if (secondSweepAverage == -1) 
+		return false;
 
 	// Returns -1 if difference between the result from first & second sweep are
 	// larger than 5 degrees. Else returns the angle at which a signal was found.
-	if (abs(secondSweepAverage-firstSweepAverage) > 5*servoResolution)
-		return -1;
-	else
-		return ((firstSweepAverage + secondSweepAverage)/2)/servoResolution;
+	return abs(secondSweepAverage-firstSweepAverage) > maxAngleDiff ? 
+	-1 : firstSweepAverage+secondSweepAverage/2;
 }
 
 // Stupid ethod to chose between incremental & decremental search
 int averageSweep(int startAngle, int endAngle) {
-	if (startAngle < endAngle)
-		return averageIncrementalSweep(startAngle, endAngle);
-	else
-		return averageDecrementalSweep(startAngle, endAngle);
+	return startAngle < endAngle ? 
+	averageIncrementalSweep(startAngle, endAngle) : averageDecrementalSweep(startAngle, endAngle);
 }
 
 // Average incremental sweep used in averageScan() method.
@@ -189,7 +175,7 @@ int averageIncrementalSweep(int startAngle, int endAngle) {
 		}
 		startAngle++;
 	}
-	return total/elements;
+	return elements > spanSizeThreshold ? (total/elements)/servoResolution : -1;
 }
 
 // Average decremental sweep
@@ -216,7 +202,7 @@ int averageDecrementalSweep(int startAngle, int endAngle) {
 		}
 		startAngle--;
 	}
-	return total/elements;
+	return elements > spanSizeThreshold ? (total/elements)/servoResolution : -1;
 }
 
 // Help variable for large turns
@@ -235,28 +221,6 @@ void servoTurn(int angle) {
 	}
 	currentServoAngle = angle;
 }
-
-
-
-// Reads sensor data
-/*bool readSensor() {
-	int reading = 0;
-	double lastT = micros();
-
-	while (!mySerial.isListening() || !mySerial.available() && micros() - lastT < 9000) mySerial.listen();
-	if (micros() - lastT < 9000) { //mySerial.available()&&
-		reading = mySerial.read();
-	}
-
-	myFake.listen();
-
-	if (reading > 0) {
-		readingData = reading;
-		return true;
-	}
-	else
-		return false;
-}*/
 
 // Reads sensor data sensorRead times
 bool readSensor() {
