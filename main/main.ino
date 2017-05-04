@@ -16,6 +16,7 @@ const int maxAngle = 180*servoResolution;
 const int sensorPin = A3;
 
 const int spanSizeThreshold = 3;
+const int maxAngleDiff = 15 * servoResolution;
 const int sensorRead = 30;				// Times to read the sensor data
 const int sensorReadThreshold = analogMax*sensorRead*0.64;	// Upperbound for ir 0.64
 
@@ -48,7 +49,7 @@ const int maxDistance = 100;		// Maximum distance in cm
 const int minDistance = 10;
 
 // Line Sensor Constants
-#define lineThreshold	23
+#define lineThreshold	10
 
 const int leftLinePin = A2;
 const int rightLinePin = A1;
@@ -170,7 +171,7 @@ void distanceNavigation(int angle) {
 	servoTurn(angle);
 
 	// While there's a signal and no lines are detected
-	while (lineDirection == STRAIGHT) {// && readSensor()) { TODO: FIX
+	while (lineDirection == STRAIGHT && readSensor()) { 
 		// Retrieve distance from ultrasound sensor
 		distance = getDistance();
 		// If distance longer than 1m: walk towoards signal with small steps
@@ -294,6 +295,7 @@ Direction getLineDirection() {
 	else
 		return UNKNOWN;	// When line found
 }
+
 // Reads data from left line sensor, returns true if on a dark area
 bool readLeftLineSensor() {
 	// Serial.println(analogRead(leftLinePin));
