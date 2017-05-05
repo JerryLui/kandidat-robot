@@ -3,7 +3,7 @@
 // Global Constants
 # define analogMax 1023
 # define pi 3.1416
-# define dockingPathLength 28
+# define dockingPathLength 28 		// Distance between station and start of docking pattern
 
 // Servo Constants
 #define servoPin 13
@@ -137,27 +137,36 @@ void loop() {
 void navigate() {
 	// Robo Logic
 	// Scan for signal in 180 degrees in front of robot
-	if (state == NAVIGATION && !inDockingRange(getDistance())) {
+	if (state == NAVIGATION && !inDockingRange()) {
 		int angle = servoScan();
 		// Serial.println(angle);
 		// Check if signal out of bounds
-		if (angle < 0 || angle > 180)
+		if (angle < 0 || angle > 180) {
 			turn(LEFT, 120);
-		else if (angle > 95)
+		}
+		else if (angle > 95) {
 			turn(LEFT, abs(90-angle));	// Rotate robot by given angular difference
-		else if (angle < 85)
+			navigateHelper();
+		}
+		else if (angle < 85) {
 			turn(RIGHT, abs(90-angle)); // Rotate robot by given anlgular difference
+			navigateHelper();
+		}
 		else {
-			int distance = getDistance(); // Else, signal is straight ahead
-			if (!inDockingRange(distance)) {	// While no line detected
-				distanceNavigation(angle, distance);
-			} else {
-				state = DOCKING;
-			}
+			navigateHelper();
 		}
 	}
 	else if (state == DOCKING) {
 		dockingNavigation(getLineDirection());
+	}
+}
+
+void navigateHelper() {
+	int distance = getDistance();
+	if (!inDockingRange(distance)) {
+		distanceNavigation(90, distance);
+	} else {
+		state = DOCKING;
 	}
 }
 
@@ -191,6 +200,11 @@ void dockingNavigation(Direction dir) {
 	}
 }
 
+bool inDockingRange() {
+	return inDockingRange(getDistance());
+}
+
+// Checks if in range of station
 bool inDockingRange(int distance) {
 	if (distance < 30 && distance > 10 && readSensor()) {
 		state = DOCKING;
@@ -325,15 +339,15 @@ int servoScan() {
 		return -1;
 
 	// If difference between the two readings differ by more than 12 degrees
-	return abs(clockwiseRead-counterClockwiseRead) > maxAngleDiff ? 
-	-1 : (clockwiseRead+counterClockwiseRead)/2;	// Return the average of two readings
+	return abs(clockwiseRead-counterClockwiseRead) > maxAngleDiff ?
+		-1 : (clockwiseRead+counterClockwiseRead)/2;	// Return the average of two readings
 
 }
 
 // Performs a incremental- or decremental sweep depending on input angles
 int sweepScan(int startAngle, int endAngle) {
 	return startAngle < endAngle ?
-	incrementalSweepScan(startAngle, endAngle) : decrementalSweepScan(startAngle, endAngle);
+		incrementalSweepScan(startAngle, endAngle) : decrementalSweepScan(startAngle, endAngle);
 }
 
 // Incremental sweep method by finding the largest span
@@ -405,13 +419,13 @@ int averageServoScan() {
 
 	// Returns -1 if difference between the result from first & second sweep are
 	// larger than 5 degrees. Else returns the angle at which a signal was found.
-	return abs(secondSweepAverage-firstSweepAverage) > maxAngleDiff ? 
-	-1 : (firstSweepAverage + secondSweepAverage)/2;
+	return abs(secondSweepAverage-firstSweepAverage) > maxAngleDiff ?
+		-1 : (firstSweepAverage + secondSweepAverage)/2;
 }
 
 // Stupid ethod to chose between incremental & decremental search
 int averageSweep(int startAngle, int endAngle) {
-	return startAngle < endAngle ? 
+	return startAngle < endAngle ?
 		averageDecrementalSweep(startAngle, endAngle) : averageDecrementalSweep(startAngle, endAngle);
 }
 
