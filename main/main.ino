@@ -3,6 +3,7 @@
 // Global Constants
 # define analogMax 1023
 # define pi 3.1416
+# define dockingPathLength 28
 
 // Servo Constants
 #define servoPin 13
@@ -49,7 +50,7 @@ const int maxDistance = 100;		// Maximum distance in cm
 const int minDistance = 10;
 
 // Line Sensor Constants
-#define lineThreshold	23
+#define lineThreshold	10
 
 const int leftLinePin = A2;
 const int rightLinePin = A1;
@@ -128,10 +129,7 @@ int test = 1;
 // Main Loop
 void loop() {
 	if (test == 1 && state != STANDBY) {
-		Serial.println("Navigate Initiate");
 		navigate();
-		Serial.println("Navigate Finished");
-		//test++;
 	}
 }
 
@@ -144,7 +142,7 @@ void navigate() {
 		// Serial.println(angle);
 		// Check if signal out of bounds
 		if (angle < 0 || angle > 180)
-			turnAround();
+			turn(LEFT, 120);
 		else if (angle > 95)
 			turn(LEFT, abs(90-angle));	// Rotate robot by given angular difference
 		else if (angle < 85)
@@ -173,13 +171,13 @@ void distanceNavigation(int angle, int distance) {
 		// Retrieve distance from ultrasound sensor
 		// If distance longer than 1m: walk towoards signal with small steps
 		if (distance > 100 || distance < 10) {
-			longWalk(STRAIGHT, 12);
+			longWalk(STRAIGHT, 20);
 		}
 		// If distance longer than ultrasound lower bound walk all the way towoards it
 		else if (distance > 30) {
-			longWalk(STRAIGHT, 0.78*distance);
+			longWalk(STRAIGHT, distance-dockingPathLength);
 		} else {
-			longWalk(STRAIGHT, 6);
+			longWalk(STRAIGHT, 5);
 		}
 		distance = getDistance();
 	}
@@ -194,7 +192,7 @@ void dockingNavigation(Direction dir) {
 }
 
 bool inDockingRange(int distance) {
-	if (distance < 30 && distance > 10) {
+	if (distance < 30 && distance > 10 && readSensor()) {
 		state = DOCKING;
 		return true;
 	} else {
@@ -484,8 +482,8 @@ void servoTurn(int angle) {
 	delay(5);
 
 	// Adds an delay for large turns to complete before another task
-	if (abs(angle-currentServoAngle) > 30) {
-		delay((abs(angle-currentServoAngle)/180.0)*800);
+	if (abs(angle-currentServoAngle) > 15) {
+		delay((abs(angle-currentServoAngle)/180.0)*900);
 	}
 
 	// Re asigns currentServoAngle
@@ -536,6 +534,7 @@ int recieveEcho() {
 // Walks towoards direction in given length in centimeters
 void longWalk(Direction dir, int length) {
 	direction(dir);
+	globalMotorDelay = motorDelayUpperBound;
 
 	int steps = lengthToSteps(length);
 	// Walks given steps, if nmbr of steps is longer than 2*accelerationLenght
@@ -606,7 +605,7 @@ void deaccelerate(int steps) {
 
 // Increments motor delay time by delayIncrement
 int incrementDelay() {
-	if (globalMotorDelay < motorDelayLowerBound)
+	if (globalMotorDelay < motorDelayUpperBound)
 		globalMotorDelay += delayIncrement;
 }
 
