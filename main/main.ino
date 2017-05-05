@@ -161,6 +161,7 @@ void navigate() {
 	}
 }
 
+// Helper function for navigate
 void navigateHelper() {
 	int distance = getDistance();
 	if (!inDockingRange(distance)) {
