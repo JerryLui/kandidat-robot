@@ -139,7 +139,6 @@ void navigate() {
 	// Scan for signal in 180 degrees in front of robot
 	if (state == NAVIGATION && !inDockingRange()) {
 		int angle = servoScan();
-		// Serial.println(angle);
 		// Check if signal out of bounds
 		if (angle < 0 || angle > 180) {
 			turn(LEFT, 120);
@@ -243,8 +242,6 @@ void debugPrintServoScan() {
 	Serial.print("Angle (Original Method): ");
 	Serial.println(servoScan());
 	delay(1000);
-	// Serial.print("Angle (Average Method): ");
-	// Serial.println(averageServoScan());
 }
 
 // Print distance data from ultrasound
@@ -314,13 +311,11 @@ Direction getLineDirection() {
 
 // Reads data from left line sensor, returns true if on a dark area
 bool readLeftLineSensor() {
-	// Serial.println(analogRead(leftLinePin));
 	return analogRead(leftLinePin) < lineThreshold;
 }
 
 // Reads data from right line sensor, returns true if on a dark area
 bool readRightLineSensor() {
-	// Serial.println(analogRead(rightLinePin));
 	return analogRead(rightLinePin) < lineThreshold;
 }
 
@@ -329,13 +324,11 @@ bool readRightLineSensor() {
 int servoScan() {
 	// First sweep scan using max span size method
 	int clockwiseRead = sweepScan(minAngle, maxAngle);
-	// Serial.println(clockwiseRead);
 	if (clockwiseRead < 0)
 		return -1;
 
 	// Second sweep scan using max span size method
 	int counterClockwiseRead = sweepScan(maxAngle, minAngle);
-	// Serial.println(counterClockwiseRead);
 	if (counterClockwiseRead < 0)
 		return -1;
 
@@ -393,11 +386,11 @@ int decrementalSweepScan(int startAngle, int endAngle) {
 
 		// If a signal is found
 		if (readSensor()) {
-			spanSize++;					// Increase the span size
+			spanSize++;			// Increase the span size
 		} else if (spanSize != 0) {			// Otherwise
 			if (maxSpanSize < spanSize) {	// If current span is largest
 				maxSpanSize = spanSize;			// Save it as largest
-				spanEnd = startAngle+1;							// Save the last element of span
+				spanEnd = startAngle+1;			// Save the last element of span
 			}
 			spanSize = 0;				// Reset span size
 		}
@@ -409,11 +402,10 @@ int decrementalSweepScan(int startAngle, int endAngle) {
 	return (maxSpanSize > spanSizeThreshold) ? (spanEnd+maxSpanSize/2)/servoResolution : -1;
 }
 
-// An alternative method using average of positive signals
+// An alternative method using average of positive signals NOTE: NOT USED
 int averageServoScan() {
 	// Stores the average of signal position
 	int firstSweepAverage = averageSweep(minAngle, maxAngle);
-	//Serial.println(firstSweepAverage);
 
 	// Stores the average pos from second sweep
 	int secondSweepAverage = averageSweep(maxAngle, minAngle);
@@ -528,8 +520,8 @@ int getDistance() {
 void sendEcho() {
 	digitalWrite(trigPin, LOW);
 	delayMicroseconds(2);
-	digitalWrite(trigPin, HIGH);			// Send an exiting pulse
-	delayMicroseconds(10);
+	digitalWrite(trigPin, HIGH);	// Send an exiting pulse
+	delayMicroseconds(10);			// For 10 micro seconds
 	digitalWrite(trigPin, LOW);
 }
 
@@ -578,9 +570,9 @@ void dockWalk(Direction dir, int steps) {
 
 /*	Converts length into motor steps
 
-		The wheels have a radius of 3.4 cm, which results in a circumference
-		of 6.8*pi cm. To convert from length to steps we use the constant steps-
-		PerTurn seen in the return formula below. 															*/
+	The wheels have a radius of 3.4 cm, which results in a circumference
+	of 6.8*pi cm. To convert from length to steps we use the constant steps-
+	PerTurn seen in the return formula below. 								*/
 int lengthToSteps(int length) {
 	return length/(6.8*pi) * stepsPerTurn;
 }
@@ -589,7 +581,7 @@ int lengthToSteps(int length) {
 void turn(Direction dir, double angle) {
 	if (dir != LEFT && dir != RIGHT) {}
 	else {
-		direction(dir);
+		direction(dir);	// Set direction
 		globalMotorDelay = motorDelayLowerBound+1000;
 		runMotor((angle/180.0)*stepsPerTurn);
 	}
@@ -640,7 +632,7 @@ void turnAround(Direction dir) {
 	turn(dir, 180);
 }
 
-// Moves one step by sending out a square wave with the input motorDelay
+// Turn stepmotors by one step by sending out a square wave with the input motorDelay
 void step() {
 	delayMicroseconds(globalMotorDelay);
 	digitalWrite(lStep, HIGH);digitalWrite(rStep, HIGH);
