@@ -3,7 +3,7 @@
 // Global Constants
 # define analogMax 1023
 # define pi 3.1416
-# define dockingPathLength 28 		// Distance between station and start of docking pattern
+# define dockingPathLength 25 		// Distance between station and start of docking pattern
 
 // Servo Constants
 #define servoPin 13
@@ -143,15 +143,15 @@ void navigate() {
 		if (angle < 0 || angle > 180) {
 			turn(LEFT, 120);
 		}
-		else if (angle > 95) {
+		else if (angle > 90) {
 			turn(LEFT, abs(90-angle));	// Rotate robot by given angular difference
 			navigateHelper();
 		}
-		else if (angle < 85) {
+		else if (angle < 90) {
 			turn(RIGHT, abs(90-angle)); // Rotate robot by given anlgular difference
 			navigateHelper();
 		}
-		else {
+		else if (angle == 90) {
 			navigateHelper();
 		}
 	}
