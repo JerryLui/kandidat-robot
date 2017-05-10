@@ -95,6 +95,11 @@ String stateToString(State inputState) {
 	}
 }
 
+// Constants for DockingHelper
+Direction currentDirection;
+Direction lastTurnDirection;
+int dockingSteps;
+const int maxDockingSteps = 30;
 
 // Setup
 void setup() {
@@ -123,6 +128,7 @@ void setup() {
 
 	// Sets Global Variables
 	state = NAVIGATION;
+	lastTurnDirection = STRAIGHT;
 }
 
 int test = 1;
@@ -156,7 +162,9 @@ void navigate() {
 		}
 	}
 	else if (state == DOCKING) {
-		dockingNavigation(getLineDirection());
+		dockingSteps = 0;
+		currentDirection = getLineDirection();
+		dockingNavigation(currentDirection);
 	}
 }
 
@@ -196,8 +204,23 @@ void distanceNavigation(int angle, int distance) {
 void dockingNavigation(Direction dir) {
 	while (!inDock(dir)) {
 		dockWalk(dir, 1);
-		dir = getLineDirection();
+		dir = dockingNavigationHelper(getLineDirection());
 	}
+}
+
+// Error correction for the final step
+Direction dockingNavigationHelper(Direction dir) {
+	if (dir == STRAIGHT) {
+		dockingSteps++;
+	}
+	else if (dir == LEFT || dir == RIGHT) {
+		if (dockingSteps > maxDockingSteps && dir == lastTurnDirection) {
+			return STRAIGHT;
+		}
+		lastTurnDirection = dir;
+		dockingSteps = 0;
+	}
+	return dir;
 }
 
 bool inDockingRange() {
