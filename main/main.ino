@@ -202,6 +202,7 @@ void distanceNavigation(int angle, int distance) {
 
 // Navigation for docking
 void dockingNavigation(Direction dir) {
+	globalMotorDelay = motorDelayUpperBound-1000;
 	while (!inDock(dir)) {
 		dockWalk(dir, 1);
 		dir = dockingNavigationHelper(getLineDirection());
@@ -581,7 +582,6 @@ void longWalk(Direction dir, int length) {
 
 // Short walk without acceleration and deacceleration
 void dockWalk(Direction dir, int steps) {
-	globalMotorDelay = motorDelayUpperBound-1000;
 	direction(dir);
 	if (steps > 1) {
 		for (int i = 0; i < steps; i++) {
@@ -590,6 +590,19 @@ void dockWalk(Direction dir, int steps) {
 	}
 	else step();
 }
+
+// Alternative walk for docking
+void dockWalkAlternative(Direction dir, int steps) {
+	direction(dir);
+	if (steps > 1) {
+		for (int i = 0; i < steps; i++) {
+			dStep(dir);
+		}
+	}
+	else 
+		dStep(dir);
+}
+
 
 /*	Converts length into motor steps
 
@@ -661,6 +674,38 @@ void step() {
 	digitalWrite(lStep, HIGH);digitalWrite(rStep, HIGH);
 	delayMicroseconds(globalMotorDelay);
 	digitalWrite(lStep, LOW);digitalWrite(rStep, LOW);
+}
+
+// Moves one step with only the right wheel
+void rightStep() {
+	delayMicroseconds(globalMotorDelay);
+	digitalWrite(rStep, HIGH);
+	delayMicroseconds(globalMotorDelay);
+	digitalWrite(rStep, LOW);
+}
+
+// Moves one step with only the left wheel
+void leftStep() {
+	delayMicroseconds(globalMotorDelay);
+	digitalWrite(lStep, HIGH);
+	delayMicroseconds(globalMotorDelay);
+	digitalWrite(lStep, LOW);
+}
+
+// Alternative steps by moving only one wheel
+void dStep(Direction dir) {
+	switch (dir) {
+		case LEFT:
+			leftStep(); break;
+		case RIGHT:
+			rightStep(); break;
+		case STRAIGHT:
+			step();	break;
+		case BACK:
+			step(); break;
+		case UNKNOWN:
+			break;
+	}
 }
 
 // Changes the direction of motors
